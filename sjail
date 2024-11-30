@@ -39,7 +39,7 @@ EOF
 }
 
 sjail_fetch() {
-    version="$1"
+    local version="$1"
     echo "Creating release ${version}"
 
     if [ -e "${zfs_mount}/releases/${version}" ]; then
@@ -50,14 +50,14 @@ sjail_fetch() {
 
     fetch "${freebsd_url}/${version}/MANIFEST" -o /tmp/MANIFEST
 
-    release_archives="base"
+    local release_archives="base" a
     for a in ${release_archives}; do
-        archive="${a}.txz"
+        local archive="${a}.txz"
         rm -f /tmp/${archive} || true
         fetch "${freebsd_url}/${version}/${archive}" -o /tmp/${archive}
 
-        checksum_want=$(grep -w ${archive} /tmp/MANIFEST | cut -f2)
-        checksum_got=$(sha256 -q /tmp/${archive})
+        local checksum_want=$(grep -w ${archive} /tmp/MANIFEST | cut -f2)
+        local checksum_got=$(sha256 -q /tmp/${archive})
         if [ "${checksum_got}" != "${checksum_want}" ]; then
             log_fatal "wrong checksum for ${archive}: ${checksum_got}"
         fi
@@ -67,37 +67,37 @@ sjail_fetch() {
 }
 
 sjail_update() {
-    version="$1"
+    local version="$1"
     echo "Updating release ${version}"
     freebsd-update --currently-running ${version} -b ${zfs_mount}/releases/${version} fetch install
     # freebsd-update --currently-running ${version} -b ${zfs_mount}/releases/${version} IDS
 }
 
 arg_get() {
-    opt=$1; shift
+    local opt=$1; shift
     echo "$@" | awk 'BEGIN{RS=" ";FS="="} /'${opt}'/ {print $2}'
 }
 
 sjail_create() {
-    jail_name="$1"; shift
-    version="$1"; shift
-    ip4=$(arg_get ip4 "$@")
-    ip6=$(arg_get ip6 "$@")
+    local jail_name="$1"; shift
+    local version="$1"; shift
+    local ip4=$(arg_get ip4 "$@")
+    local ip6=$(arg_get ip6 "$@")
     echo "Creating thin jail: $jail_name"
 
     zfs create -p ${zfs_options} "${zfs_pool}/jails/${jail_name}"
 
-    jail_path="${zfs_mount}/jails/${jail_name}"
+    local jail_path="${zfs_mount}/jails/${jail_name}"
     cat <<EOF > ${jail_path}/fstab
 ${zfs_mount}/releases/${version} ${jail_path}/root/.ro nullfs ro 0 0
 EOF
 
-    ip4_addr=""
+    local ip4_addr=""
     if [ -n "${ip4}" ]; then
         ip4_addr="ip4.addr = ${ip4};"
     fi
-    ip6_addr=""
-    ip6_mode="ip6 = disable;"
+    local ip6_addr=""
+    local ip6_mode="ip6 = disable;"
     if [ -n "${ip6}" ]; then
         ip6_addr="ip6.addr = ${ip6};"
         ip6_mode="ip6 = new;"
@@ -137,12 +137,12 @@ EOF
 
     mkdir .ro
     mkdir usr
-    ro="bin boot lib libexec rescue sbin usr/bin usr/include usr/lib usr/lib32 usr/libdata usr/libexec usr/sbin usr/share usr/src"
+    local ro="bin boot lib libexec rescue sbin usr/bin usr/include usr/lib usr/lib32 usr/libdata usr/libexec usr/sbin usr/share usr/src" l
     for l in ${ro}; do
       ln -Fsf /.ro/${l} ${l}
     done
 
-    rw=".cshrc .profile COPYRIGHT dev etc media mnt net proc root tmp var usr/obj usr/tests"
+    local rw=".cshrc .profile COPYRIGHT dev etc media mnt net proc root tmp var usr/obj usr/tests" files
     for files in ${rw}; do
       cp -a "${zfs_mount}/releases/${version}/${files}" "${jail_path}/root/${files}"
     done
@@ -158,7 +158,7 @@ EOF
 }
 
 sjail_destroy() {
-    jail_name="$1"
+    local jail_name="$1"
 
     if jls -j ${jail_name} >/dev/null 2>&1; then
         log_fatal "jail running. Stop first."
@@ -174,11 +174,13 @@ output_get_word() {
 }
 
 sjail_list() {
+    local format all running status release j
+
     format="%-10s %-8s %-13s %15s %3s\n"
     printf "${format}" Jail Status Release
 
-    all_info=$(jail -e'|' '*' | sort)
-    all=$(echo -e "$all_info" | cut -d'|' -f1 | cut -d= -f2)
+    all=$(jail -e'|' '*' | sort)
+    all=$(echo -e "$all" | cut -d'|' -f1 | cut -d= -f2)
     running=$(jls -N)
     for j in ${all}; do
         status=$(output_get_word "${running}" "${j}")
