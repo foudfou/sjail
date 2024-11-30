@@ -1,0 +1,196 @@
+#!/bin/sh
+set -ue
+
+freebsd_url=https://download.freebsd.org/releases/amd64/amd64/
+zfs_options="-o compress=lz4 -o atime=off"
+
+base_dir=$(dirname $(realpath $0))
+
+log_fatal() {
+    msg=$1
+    echo "Error: ${msg}" 1>&2
+    exit 1
+}
+
+. /usr/local/etc/sjail.conf
+
+sjail_init() {
+    if [ -e /usr/local/etc/sjail.conf ]; then
+        log_fatal "/usr/local/etc/sjail.conf already exists"
+    fi
+
+    zfs create ${zfs_options} -o mountpoint=${zfs_mount} ${zfs_pool}
+
+    cat <<EOF > /etc/jail.conf
+.include "${zfs_mount}/*/jail.conf";
+EOF
+
+    # FIXME handle host sysrc jail_enable and jail_list
+}
+
+sjail_fetch() {
+    set -x
+    version="$1"
+    echo "Creating release ${version}"
+
+    if [ -e "${zfs_mount}/releases/${version}" ]; then
+        log_fatal "$version already fetched"
+    fi
+
+    zfs create ${zfs_options} -p ${zfs_pool}/releases/${version}
+
+    fetch "${freebsd_url}/${version}/MANIFEST" -o /tmp/MANIFEST
+
+    release_archives="base"
+    for a in ${release_archives}; do
+        archive="${a}.txz"
+        rm -f /tmp/${archive} || true
+        fetch "${freebsd_url}/${version}/${archive}" -o /tmp/${archive}
+
+        checksum_want=$(grep -w ${archive} /tmp/MANIFEST | cut -f2)
+        checksum_got=$(sha256 -q /tmp/${archive})
+        if [ "${checksum_got}" != "${checksum_want}" ]; then
+            log_fatal "wrong checksum for ${archive}: ${checksum_got}"
+        fi
+
+        tar -xf /tmp/${archive} -C "${zfs_mount}/releases/${version}"
+    done
+}
+
+sjail_update() {
+    version="$1"
+    echo "Updating release ${version}"
+    freebsd-update --currently-running ${version} -b ${zfs_mount}/releases/${version} fetch install
+    # freebsd-update --currently-running ${version} -b ${zfs_mount}/releases/${version} IDS
+}
+
+sjail_create() {
+    jail_name="$1"
+    version="$2"
+    echo "Creating thin jail: $jail_name"
+
+    zfs create -p ${zfs_options} "${zfs_pool}/jails/${jail_name}"
+
+    jail_path="${zfs_mount}/jails/${jail_name}"
+    cat <<EOF > ${jail_path}/fstab
+${zfs_mount}/releases/${version} ${jail_path}/root/.ro nullfs ro 0 0
+EOF
+
+    # generate jail.conf
+    if [ "$(sysctl -n security.jail.jailed)" -eq 1 ]; then
+        devfs_ruleset_value=0
+    else
+        devfs_ruleset_value=4
+    fi
+    cat << EOF > "${jail_path}/jail.conf"
+${jail_name} {
+  host.hostname = ${jail_name};
+  path = ${jail_path}/root;
+
+  exec.clean;
+  exec.consolelog = ${jail_path}/console.log;
+  exec.start = '/bin/sh /etc/rc';
+  exec.stop = '/bin/sh /etc/rc.shutdown';
+  exec.prestart += "cp /etc/resolv.conf.jails \$path/etc/resolv.conf";
+  exec.prestart += "cp /etc/localtime \$path/etc";
+  exec.poststop += "rm \$path/etc/resolv.conf";
+  exec.poststop += "rm \$path/etc/localtime";
+
+  mount.devfs;
+  mount.fstab = ${jail_path}/fstab;
+  enforce_statfs = 2;
+  devfs_ruleset = ${devfs_ruleset_value};
+
+  securelevel = 2;
+  osrelease = ${version};
+
+  interface = ${interface};
+# FIXME ip
+}
+EOF
+
+    mkdir "${jail_path}/root"
+    cd "${jail_path}/root"
+
+    mkdir .ro
+    mkdir usr
+    ro="bin boot lib libexec rescue sbin usr/bin usr/include usr/lib usr/lib32 usr/libdata usr/libexec usr/sbin usr/share usr/src"
+    for l in ${ro}; do
+      ln -Fsf /.ro/${l} ${l}
+    done
+
+    rw=".cshrc .profile COPYRIGHT dev etc media mnt net proc root tmp var usr/obj usr/tests"
+    for files in ${rw}; do
+      cp -a "${zfs_mount}/releases/${version}/${files}" "${jail_path}/root/${files}"
+    done
+
+    mkdir -p usr/home
+    ln -s usr/home home
+    touch etc/fstab
+
+    cd -
+}
+
+sjail_destroy() {
+    jail_name="$1"
+
+    if jls -j ${jail_name} >/dev/null 2>&1; then
+        log_fatal "jail running. Stop if first."
+    fi
+
+    zfs destroy -r ${zfs_pool}/jails/${jail_name}
+}
+
+usage() {
+    cat <<EOF
+Usage: `basename $0` COMMAND [args]
+
+Commands:
+    init                 Setup zpool
+    fetch VERSION        Fetch and create base template for version VERSION
+                         (e.g. 14-1-RELEASE)
+    update VERSION       Apply freebsd-update on base template with version
+                         VERSION. Can be done anytime.
+    create NAME VERSION  Create thin jail NAME from base template with version
+                         VERSION.
+    destroy NAME         Destroy thin jail NAME.
+EOF
+}
+
+if [ $# -lt 1 ]; then
+    usage
+    exit 1
+fi
+
+case "$1" in
+    help|-h|--help)
+        usage
+        exit 0
+        ;;
+esac
+
+if [ "$(id -u)" -ne 0 ]; then
+    log_fatal "not root"
+fi
+
+command=${1}; shift
+case $command in
+    init)
+        sjail_init
+        ;;
+    fetch)
+        sjail_fetch "$@"
+        ;;
+    update)
+        sjail_update "$@"
+        ;;
+    create)
+        sjail_create "$@"
+        ;;
+    destroy)
+        sjail_destroy "$@"
+        ;;
+    *)
+        usage
+        ;;
+esac

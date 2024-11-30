@@ -1,0 +1,3 @@
+zfs_pool="zroot/sjails"
+zfs_mount="/usr/local/sjails"
+interface="lo1"
