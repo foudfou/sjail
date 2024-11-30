@@ -14,6 +14,10 @@ log_fatal() {
 
 . /usr/local/etc/sjail.conf
 
+sysrc_silent() {
+    sysrc "$1" >/dev/null
+}
+
 sjail_init() {
     if [ -e /usr/local/etc/sjail.conf ]; then
         log_fatal "/usr/local/etc/sjail.conf already exists"
@@ -21,15 +25,20 @@ sjail_init() {
 
     zfs create ${zfs_options} -o mountpoint=${zfs_mount} ${zfs_pool}
 
-    cat <<EOF > /etc/jail.conf
-.include "${zfs_mount}/*/jail.conf";
+    if ! grep -q '.include "'${zfs_mount}/jails /etc/jail.conf; then
+        cat <<EOF > /etc/jail.conf
+.include "${zfs_mount}/jails/*/jail.conf";
 EOF
+    fi
 
-    # FIXME handle host sysrc jail_enable and jail_list
+    sysrc_silent jail_enable="YES"
+    sysrc_silent jail_parallel_start="YES"
+
+    sysrc_silent cloned_interfaces+="lo1"
+    service netif cloneup
 }
 
 sjail_fetch() {
-    set -x
     version="$1"
     echo "Creating release ${version}"
 
@@ -64,9 +73,16 @@ sjail_update() {
     # freebsd-update --currently-running ${version} -b ${zfs_mount}/releases/${version} IDS
 }
 
+arg_get() {
+    opt=$1; shift
+    echo "$@" | awk 'BEGIN{RS=" ";FS="="} /'${opt}'/ {print $2}'
+}
+
 sjail_create() {
-    jail_name="$1"
-    version="$2"
+    jail_name="$1"; shift
+    version="$1"; shift
+    ip4=$(arg_get ip4 "$@")
+    ip6=$(arg_get ip6 "$@")
     echo "Creating thin jail: $jail_name"
 
     zfs create -p ${zfs_options} "${zfs_pool}/jails/${jail_name}"
@@ -76,12 +92,17 @@ sjail_create() {
 ${zfs_mount}/releases/${version} ${jail_path}/root/.ro nullfs ro 0 0
 EOF
 
-    # generate jail.conf
-    if [ "$(sysctl -n security.jail.jailed)" -eq 1 ]; then
-        devfs_ruleset_value=0
-    else
-        devfs_ruleset_value=4
+    ip4_addr=""
+    if [ -n "${ip4}" ]; then
+        ip4_addr="ip4.addr = ${ip4};"
     fi
+    ip6_addr=""
+    ip6_mode="ip6 = disable;"
+    if [ -n "${ip6}" ]; then
+        ip6_addr="ip6.addr = ${ip6};"
+        ip6_mode="ip6 = new;"
+    fi
+
     cat << EOF > "${jail_path}/jail.conf"
 ${jail_name} {
   host.hostname = ${jail_name};
@@ -99,13 +120,15 @@ ${jail_name} {
   mount.devfs;
   mount.fstab = ${jail_path}/fstab;
   enforce_statfs = 2;
-  devfs_ruleset = ${devfs_ruleset_value};
+  devfs_ruleset = 4;
 
   securelevel = 2;
   osrelease = ${version};
 
   interface = ${interface};
-# FIXME ip
+  ${ip4_addr}
+  ${ip6_addr}
+  ${ip6_mode}
 }
 EOF
 
@@ -124,11 +147,14 @@ EOF
       cp -a "${zfs_mount}/releases/${version}/${files}" "${jail_path}/root/${files}"
     done
 
+    # minor adjustments
     mkdir -p usr/home
     ln -s usr/home home
     touch etc/fstab
 
     cd -
+
+    sysrc_silent jail_list+="${jail_name}"
 }
 
 sjail_destroy() {
@@ -139,9 +165,11 @@ sjail_destroy() {
     fi
 
     zfs destroy -r ${zfs_pool}/jails/${jail_name}
+
+    sysrc_silent jail_list-="${jail_name}"
 }
 
-extract() {
+output_get_word() {
     echo -e "$1" | grep -w "$2" || true
 }
 
@@ -153,14 +181,14 @@ sjail_list() {
     all=$(echo -e "$all_info" | cut -d'|' -f1 | cut -d= -f2)
     running=$(jls -N)
     for j in ${all}; do
-        status=$(extract "${running}" "${j}")
+        status=$(output_get_word "${running}" "${j}")
         if [ -n "${status}" ]; then
             status=Up
         else
             status=Down
         fi
 
-        release=$(extract "${all_info}" "name=${j}")
+        release=$(output_get_word "${all_info}" "name=${j}")
         release=$(echo -n "${release}" | awk 'BEGIN{RS="|";FS="="} /mount.fstab/ {print $2}')
         if [ -n "${release}" ]; then
             release=$(grep releases "${release}" | cut -d' ' -f1 || true)
