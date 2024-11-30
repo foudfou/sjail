@@ -135,10 +135,42 @@ sjail_destroy() {
     jail_name="$1"
 
     if jls -j ${jail_name} >/dev/null 2>&1; then
-        log_fatal "jail running. Stop if first."
+        log_fatal "jail running. Stop first."
     fi
 
     zfs destroy -r ${zfs_pool}/jails/${jail_name}
+}
+
+extract() {
+    echo -e "$1" | grep -w "$2" || true
+}
+
+sjail_list() {
+    format="%-10s %-8s %-13s %15s %3s\n"
+    printf "${format}" Jail Status Release
+
+    all_info=$(jail -e'|' '*' | sort)
+    all=$(echo -e "$all_info" | cut -d'|' -f1 | cut -d= -f2)
+    running=$(jls -N)
+    for j in ${all}; do
+        status=$(extract "${running}" "${j}")
+        if [ -n "${status}" ]; then
+            status=Up
+        else
+            status=Down
+        fi
+
+        release=$(extract "${all_info}" "name=${j}")
+        release=$(echo -n "${release}" | awk 'BEGIN{RS="|";FS="="} /mount.fstab/ {print $2}')
+        if [ -n "${release}" ]; then
+            release=$(grep releases "${release}" | cut -d' ' -f1 || true)
+            release=${release##*/}
+        else
+            release=-
+        fi
+
+        printf "${format}" ${j} ${status} ${release}
+    done
 }
 
 usage() {
@@ -148,12 +180,13 @@ Usage: `basename $0` COMMAND [args]
 Commands:
     init                 Setup zpool
     fetch VERSION        Fetch and create base template for version VERSION
-                         (e.g. 14-1-RELEASE)
+                         (e.g. 14.1-RELEASE)
     update VERSION       Apply freebsd-update on base template with version
                          VERSION. Can be done anytime.
     create NAME VERSION  Create thin jail NAME from base template with version
                          VERSION.
     destroy NAME         Destroy thin jail NAME.
+    list                 List status of all jails.
 EOF
 }
 
@@ -189,6 +222,9 @@ case $command in
         ;;
     destroy)
         sjail_destroy "$@"
+        ;;
+    list)
+        sjail_list
         ;;
     *)
         usage

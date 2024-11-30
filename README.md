@@ -15,11 +15,16 @@ Provides:
 
 ## Usage
 
-| Create  | `sjail create alcatraz 14.1-RELEASE` |
-| Destroy | `sjail destroy alcatraz`             |
-| List    | `jls`                                |
-| Start   | `jail -c alcatraz`                   |
-| Stop    | `jail -r alcatraz`                   |
+| Fetch        | `sjail fetch 14.1-RELEASE`           |
+| Create       | `sjail create alcatraz 14.1-RELEASE` |
+| Destroy      | `sjail destroy alcatraz`             |
+| List         | `jls` or `sjail list` for all        |
+| Start        | `jail -c alcatraz`                   |
+| Stop         | `jail -r alcatraz`                   |
+
+## Upgrade
+
+Best to re-create jails after
 
 ## Credits
 
