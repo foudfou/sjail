@@ -1,22 +1,12 @@
 #!/bin/sh
 set -ue
+sjail=$(realpath $0)
 
 freebsd_url=https://download.freebsd.org/releases/amd64/amd64/
 zfs_options="-o compress=lz4 -o atime=off"
 
-base_dir=$(dirname $(realpath $0))
-
-log_fatal() {
-    msg=$1
-    echo "Error: ${msg}" 1>&2
-    exit 1
-}
-
 . /usr/local/etc/sjail.conf
-
-sysrc_silent() {
-    sysrc "$1" >/dev/null
-}
+. /usr/local/share/sjail/common.sh
 
 sjail_init() {
     if [ -e /usr/local/etc/sjail.conf ]; then
@@ -24,6 +14,9 @@ sjail_init() {
     fi
 
     zfs create ${zfs_options} -o mountpoint=${zfs_mount} ${zfs_pool}
+
+    # templates arbitrarily in sjail pool
+    zfs create ${zfs_options} -p ${zfs_pool}/templates
 
     if ! grep -q '.include "'${zfs_mount}/jails /etc/jail.conf; then
         cat <<EOF > /etc/jail.conf
@@ -73,11 +66,6 @@ sjail_update() {
     # freebsd-update --currently-running ${version} -b ${zfs_mount}/releases/${version} IDS
 }
 
-arg_get() {
-    local opt=$1; shift
-    echo "$@" | awk 'BEGIN{RS=" ";FS="="} /'${opt}'/ {print $2}'
-}
-
 sjail_create() {
     local jail_name="$1"; shift
     local version="$1"; shift
@@ -112,10 +100,12 @@ ${jail_name} {
   exec.consolelog = ${jail_path}/console.log;
   exec.start = '/bin/sh /etc/rc';
   exec.stop = '/bin/sh /etc/rc.shutdown';
-  exec.prestart += "cp /etc/resolv.conf.jails \$path/etc/resolv.conf";
-  exec.prestart += "cp /etc/localtime \$path/etc";
-  exec.poststop += "rm \$path/etc/resolv.conf";
-  exec.poststop += "rm \$path/etc/localtime";
+  exec.prestart  += "cp /etc/resolv.conf.jails \$path/etc/resolv.conf";
+  exec.prestart  += "cp /etc/localtime \$path/etc";
+  exec.poststart += "${sjail} _hook_start \$name";
+  exec.prestop   += "${sjail} _hook_stop \$name";
+  exec.poststop  += "rm \$path/etc/resolv.conf";
+  exec.poststop  += "rm \$path/etc/localtime";
 
   mount.devfs;
   mount.fstab = ${jail_path}/fstab;
@@ -125,7 +115,7 @@ ${jail_name} {
   securelevel = 2;
   osrelease = ${version};
 
-  interface = ${interface};
+  interface = ${loopback};
   ${ip4_addr}
   ${ip6_addr}
   ${ip6_mode}
@@ -169,28 +159,22 @@ sjail_destroy() {
     sysrc_silent jail_list-="${jail_name}"
 }
 
-output_get_word() {
-    echo -e "$1" | grep -w "$2" || true
-}
-
 sjail_list() {
-    local format all running status release j
-
-    format="%-10s %-8s %-13s %15s %3s\n"
+    local format="%-10s %-8s %-13s %15s %3s\n"
     printf "${format}" Jail Status Release
 
-    all=$(jail -e'|' '*' | sort)
-    all=$(echo -e "$all" | cut -d'|' -f1 | cut -d= -f2)
-    running=$(jls -N)
+    local all_info=$(jail -e'|' '*' | sort)
+    local all=$(echo -e "$all_info" | cut -d'|' -f1 | cut -d= -f2) j
+    local running=$(jls -N)
     for j in ${all}; do
-        status=$(output_get_word "${running}" "${j}")
+        local status=$(output_get_word "${running}" "${j}")
         if [ -n "${status}" ]; then
             status=Up
         else
             status=Down
         fi
 
-        release=$(output_get_word "${all_info}" "name=${j}")
+        local release=$(output_get_word "${all_info}" "name=${j}")
         release=$(echo -n "${release}" | awk 'BEGIN{RS="|";FS="="} /mount.fstab/ {print $2}')
         if [ -n "${release}" ]; then
             release=$(grep releases "${release}" | cut -d' ' -f1 || true)
@@ -201,6 +185,55 @@ sjail_list() {
 
         printf "${format}" ${j} ${status} ${release}
     done
+}
+
+sjail_apply() {
+    local jail_name="$1"
+    local template="$2"
+
+    local jail_path="${zfs_mount}/jails/${jail_name}"
+
+    local status=$(output_get_word "$(jls -N)" "${jail_name}")
+    if [ -z "${status}" ]; then
+        log_fatal "jail must be running. Start first."
+    fi
+
+    if [ ! -e "${zfs_mount}/templates/${template}" ]; then
+        log_fatal "template not found: ${zfs_mount}/templates/${template}"
+    fi
+
+    . /usr/local/share/sjail/cmd.sh
+    . "${zfs_mount}/templates/${template}"
+
+    jail -rc ${jail_name}
+}
+
+# Additional jail start operations
+sjail_hook_start() {
+    local jail_name="$1"
+    local jail_path="${zfs_mount}/jails/${jail_name}"
+
+    . /usr/local/share/sjail/cmd.sh
+
+    if [ -e "${jail_path}/rdr.conf" ]; then
+        while read line; do
+            grep -q -E '^(#|\s*$)' && continue
+
+            pf_rdr_add "$line"
+        done < "${jail_path}/rdr.conf"
+    fi
+}
+
+# Additional jail stop operations
+sjail_hook_stop() {
+    local jail_name="$1"
+    local jail_path="${zfs_mount}/jails/${jail_name}"
+
+    . /usr/local/share/sjail/cmd.sh
+
+    if [ -e "${jail_path}/rdr.conf" ]; then
+        pf_rdr_clear "${jail_name}"
+    fi
 }
 
 usage() {
@@ -217,6 +250,7 @@ Commands:
                          VERSION.
     destroy NAME         Destroy thin jail NAME.
     list                 List status of all jails.
+    apply NAME TEMPLATE  Apply template on jail NAME.
 EOF
 }
 
@@ -255,6 +289,15 @@ case $command in
         ;;
     list)
         sjail_list
+        ;;
+    apply)
+        sjail_apply "$@"
+        ;;
+    _hook_start)
+        sjail_hook_start "$@"
+        ;;
+    _hook_stop)
+        sjail_hook_stop "$@"
         ;;
     *)
         usage
