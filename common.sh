@@ -5,6 +5,14 @@ log_fatal() {
     exit 1
 }
 
+log() {
+    echo "$*"
+}
+
+log_debug() {
+    :
+}
+
 sysrc_silent() {
     sysrc "$1" >/dev/null
 }

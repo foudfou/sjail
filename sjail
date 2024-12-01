@@ -8,8 +8,9 @@ zfs_options="-o compress=lz4 -o atime=off"
 . /usr/local/etc/sjail.conf
 . /usr/local/share/sjail/common.sh
 
-# FIXME add some logging
 sjail_init() {
+    log "Setting up sjail"
+
     if [ ! -e /usr/local/etc/sjail.conf ]; then
         log_fatal "missing /usr/local/etc/sjail.conf"
     fi
@@ -34,7 +35,7 @@ EOF
 
 sjail_fetch() {
     local version="$1"
-    echo "Creating release ${version}"
+    log "Creating release ${version}"
 
     if [ -e "${zfs_mount}/releases/${version}" ]; then
         log_fatal "$version already fetched"
@@ -63,7 +64,7 @@ sjail_fetch() {
 
 sjail_update() {
     local version="$1"
-    echo "Updating release ${version}"
+    log "Updating release ${version}"
     freebsd-update --currently-running ${version} -b ${zfs_mount}/releases/${version} fetch install
     # freebsd-update --currently-running ${version} -b ${zfs_mount}/releases/${version} IDS
 }
@@ -73,7 +74,7 @@ sjail_create() {
     local version="$1"; shift
     local ip4=$(arg_get ip4 "$@")
     local ip6=$(arg_get ip6 "$@")
-    echo "Creating thin jail: $jail_name"
+    log "Creating thin jail: $jail_name"
 
     zfs create ${zfs_options} -p "${zfs_pool}/jails/${jail_name}"
 
@@ -151,6 +152,7 @@ EOF
 
 sjail_destroy() {
     local jail_name="$1"
+    log "Destroying thin jail: $jail_name"
 
     if jls -j ${jail_name} >/dev/null 2>&1; then
         log_fatal "jail running. Stop first."
@@ -192,6 +194,7 @@ sjail_list() {
 sjail_apply() {
     local jail_name="$1"
     local template="$2"
+    log "Applying template ${2} on jail ${1}"
 
     local jail_path="${zfs_mount}/jails/${jail_name}"
 
@@ -250,19 +253,22 @@ sjail_hook_stop() {
 
 usage() {
     cat <<EOF
-Usage: `basename $0` COMMAND [args]
+Usage: `basename $0` [-hv] command [args]
+
+Options:
+    -h   help; show this help.
+    -v   verbose; show more information.
 
 Commands:
     init                 Setup zpool
-    fetch VERSION        Fetch and create base template for version VERSION
+    fetch version        Fetch and create base template for version
                          (e.g. 14.1-RELEASE)
-    update VERSION       Apply freebsd-update on base template with version
-                         VERSION. Can be done anytime.
-    create NAME VERSION  Create thin jail NAME from base template with version
-                         VERSION.
-    destroy NAME         Destroy thin jail NAME.
+    update version       Apply freebsd-update on base template with version.
+                         Can be done anytime.
+    create name version  Create thin jail from base template with version.
+    destroy name         Destroy thin jail.
     list                 List status of all jails.
-    apply NAME TEMPLATE  Apply template on jail NAME.
+    apply name template  Apply template on jail.
 EOF
 }
 
@@ -275,6 +281,12 @@ case "$1" in
     help|-h|--help)
         usage
         exit 0
+        ;;
+    -v)
+        log_debug() {
+            log "  $*"
+        }
+        shift
         ;;
 esac
 
