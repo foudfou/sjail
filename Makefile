@@ -20,6 +20,5 @@ check-root:
 ls-install:
 	ls -l /usr/local/bin/sjail /usr/local/share/sjail/* /usr/local/etc/sjail.conf.sample
 
-# FIXME split test into files
 test:
 	test.sh t/*

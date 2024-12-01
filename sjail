@@ -1,5 +1,5 @@
 #!/bin/sh
-set -ue
+set -eu
 sjail=$(realpath $0)
 
 freebsd_url=https://download.freebsd.org/releases/amd64/amd64/
@@ -8,6 +8,7 @@ zfs_options="-o compress=lz4 -o atime=off"
 . /usr/local/etc/sjail.conf
 . /usr/local/share/sjail/common.sh
 
+# FIXME add some logging
 sjail_init() {
     if [ ! -e /usr/local/etc/sjail.conf ]; then
         log_fatal "missing /usr/local/etc/sjail.conf"
@@ -46,6 +47,7 @@ sjail_fetch() {
     local release_archives="base" a
     for a in ${release_archives}; do
         local archive="${a}.txz"
+
         rm -f /tmp/${archive} || true
         fetch "${freebsd_url}/${version}/${archive}" -o /tmp/${archive}
 
@@ -100,7 +102,7 @@ ${jail_name} {
   exec.consolelog = ${jail_path}/console.log;
   exec.start = '/bin/sh /etc/rc';
   exec.stop = '/bin/sh /etc/rc.shutdown';
-  exec.prestart  += "cp /etc/resolv.conf.jails \$path/etc/resolv.conf";
+  exec.prestart  += "cp /etc/resolv.conf \$path/etc/resolv.conf";
   exec.prestart  += "cp /etc/localtime \$path/etc";
   exec.poststart += "${sjail} _hook_start \$name";
   exec.prestop   += "${sjail} _hook_stop \$name";
@@ -214,11 +216,16 @@ sjail_hook_start() {
 
     . /usr/local/share/sjail/cmd.sh
 
+    local ip4=$(jail_conf_get "${jail_name}" ip4.addr)
+    local ip6=$(jail_conf_get "${jail_name}" ip6.addr) ip
+    for ip in ${ip4} ${ip6}; do
+        pfctl -q -t jails -T add "${ip}"
+    done
+
     if [ -e "${jail_path}/rdr.conf" ]; then
         while read line; do
             grep -q -E '^(#|\s*$)' && continue
-
-            pf_rdr_add "$line"
+            pf_rdr_add "$jail_name" ${line}
         done < "${jail_path}/rdr.conf"
     fi
 }
@@ -229,6 +236,12 @@ sjail_hook_stop() {
     local jail_path="${zfs_mount}/jails/${jail_name}"
 
     . /usr/local/share/sjail/cmd.sh
+
+    local ip4=$(jail_conf_get "${jail_name}" ip4.addr) ip
+    local ip6=$(jail_conf_get "${jail_name}" ip6.addr)
+    for ip in ${ip4} ${ip6}; do
+        pfctl -q -t jails -T delete "${ip}"
+    done
 
     if [ -e "${jail_path}/rdr.conf" ]; then
         pf_rdr_clear "${jail_name}"
