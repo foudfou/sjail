@@ -9,8 +9,8 @@ zfs_options="-o compress=lz4 -o atime=off"
 . /usr/local/share/sjail/common.sh
 
 sjail_init() {
-    if [ -e /usr/local/etc/sjail.conf ]; then
-        log_fatal "/usr/local/etc/sjail.conf already exists"
+    if [ ! -e /usr/local/etc/sjail.conf ]; then
+        log_fatal "missing /usr/local/etc/sjail.conf"
     fi
 
     zfs create ${zfs_options} -o mountpoint=${zfs_mount} ${zfs_pool}
@@ -27,7 +27,7 @@ EOF
     sysrc_silent jail_enable="YES"
     sysrc_silent jail_parallel_start="YES"
 
-    sysrc_silent cloned_interfaces+="lo1"
+    sysrc_silent cloned_interfaces+="${loopback}"
     service netif cloneup
 }
 
@@ -73,7 +73,7 @@ sjail_create() {
     local ip6=$(arg_get ip6 "$@")
     echo "Creating thin jail: $jail_name"
 
-    zfs create -p ${zfs_options} "${zfs_pool}/jails/${jail_name}"
+    zfs create ${zfs_options} -p "${zfs_pool}/jails/${jail_name}"
 
     local jail_path="${zfs_mount}/jails/${jail_name}"
     cat <<EOF > ${jail_path}/fstab
@@ -193,8 +193,7 @@ sjail_apply() {
 
     local jail_path="${zfs_mount}/jails/${jail_name}"
 
-    local status=$(output_get_word "$(jls -N)" "${jail_name}")
-    if [ -z "${status}" ]; then
+    if ! jls -j ${jail_name} >/dev/null 2>&1; then
         log_fatal "jail must be running. Start first."
     fi
 
