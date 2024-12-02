@@ -38,10 +38,8 @@ for want in \
         'alcatraz' \
         'i am groot'
 do
-    if ! (echo -e "${out}" | grep -q "${want}"); then
-        tap_fail "$t: include success: ${want}"
-    fi
-    tap_pass "$t: include success"
+    echo -e "${out}" | grep -q "${want}"
+    tap_ok $? "$t: include success: ${want}"
 done
 
 
@@ -52,10 +50,8 @@ EOF
 out=$(sjail apply alcatraz test2 2>&1 ||true)
 
 want='invalid format: badarg'
-if ! (echo -e "${out}" | grep -q "${want}"); then
-    tap_fail "$t: bad argument format: ${want}"
-fi
-tap_pass "$t: bad argument format"
+echo -e "${out}" | grep -q "${want}"
+tap_ok $? "$t: bad argument format: ${want}"
 
 jail -r alcatraz >/dev/null ||suicide
 sjail destroy alcatraz >/dev/null ||suicide

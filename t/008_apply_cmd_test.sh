@@ -31,10 +31,8 @@ for want in \
         'uid=0(root) gid=0(wheel) groups=0(wheel)' \
         'alcatraz'
 do
-    if ! (echo -e "${out}" | grep -q "${want}"); then
-        tap_fail "$t: cmd success: ${want}"
-    fi
-    tap_pass "$t: cmd success"
+    echo -e "${out}" | grep -q "${want}"
+    tap_ok $? "$t: cmd success: ${want}"
 done
 
 jail -r alcatraz >/dev/null ||suicide

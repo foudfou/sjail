@@ -9,7 +9,6 @@
 # make install
 # sjail init
 #
-set -e
 
 if [ "$(sysctl -n security.jail.jailed)" -eq 0 -a \
      "$(sysctl -n kern.vm_guest)" = none ]; then

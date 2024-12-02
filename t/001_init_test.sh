@@ -11,29 +11,19 @@ t="init"
 
 sjail init ||suicide
 
-if ! zfs list -H ${zfs_dataset} >/dev/null;then
-    tap_fail "$t: zpool created"
-fi
-tap_pass "$t: zpool created"
+zfs list -H ${zfs_dataset} >/dev/null
+tap_ok $? "$t: zpool created"
 
-if ! zfs list -H ${zfs_dataset}/recipes >/dev/null;then
-    tap_fail "$t: recipe zpool created"
-fi
-tap_pass "$t: recipe zpool created"
+zfs list -H ${zfs_dataset}/recipes >/dev/null
+tap_ok $? "$t: recipe zpool created"
 
-if ! grep -q '.include "'${zfs_mount}/jails /etc/jail.conf;then
-    tap_fail "$t: .include in /etc/jails.conf"
-fi
-tap_pass "$t: .include in /etc/jails.conf"
+grep -q '.include "'${zfs_mount}/jails /etc/jail.conf
+tap_ok $? "$t: .include in /etc/jails.conf"
 
-if ! sysrc -c jail_enable="YES";then
-    tap_fail "$t: sysrc jail_enable"
-fi
-tap_pass "$t: sysrc jail_enable"
+sysrc -c jail_enable="YES"
+tap_ok $? "$t: sysrc jail_enable"
 
-if ! sysrc -c cloned_interfaces+="${loopback}";then
-    tap_fail "$t: sysrc cloned_interfaces"
-fi
-tap_pass "$t: sysrc cloned_interfaces"
+sysrc -c cloned_interfaces+="${loopback}"
+tap_ok $? "$t: sysrc cloned_interfaces"
 
 tap_end

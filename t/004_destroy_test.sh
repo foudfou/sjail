@@ -10,17 +10,13 @@ cleanup() {
 
 t="destroy"
 
-sjail create alcatraz "${release}" >/dev/null
-sjail destroy alcatraz >/dev/null
+sjail create alcatraz "${release}" >/dev/null ||suicide
+sjail destroy alcatraz >/dev/null ||suicide
 
-if zfs list -H ${zfs_dataset}/jails/alcatraz 2>/dev/null;then
-    tap_fail "$t: jail pool destroyed"
-fi
-tap_pass "$t: jail pool destroyed"
+zfs list -H ${zfs_dataset}/jails/alcatraz 2>/dev/null; [ $? -ne 0 ]
+tap_ok $? "$t: jail pool destroyed"
 
-if $(sysrc jail_list | grep -qw alcatraz);then
-    tap_fail "$t: jail removed from jail_list entry"
-fi
-tap_pass "$t: jail removed from jail_list entry"
+sysrc jail_list | grep -qw alcatraz; [ $? -ne 0 ]
+tap_ok $? "$t: jail removed from jail_list entry"
 
 tap_end

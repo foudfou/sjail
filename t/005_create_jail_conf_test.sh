@@ -12,33 +12,25 @@ t="create jail.conf"
 
 jail_conf="${zfs_mount}/jails/alcatraz/jail.conf"
 
-sjail create alcatraz "${release}" >/dev/null
-if grep -q addr ${jail_conf};then
-    tap_fail "$t: no ip in jail.conf"
-fi
-tap_pass "$t: no ip in jail.conf"
+sjail create alcatraz "${release}" >/dev/null ||suicide
+grep -q addr ${jail_conf};  [ $? = 1 ]
+tap_ok $? "$t: no ip in jail.conf"
 sjail destroy alcatraz >/dev/null ||suicide
 
-sjail create alcatraz "${release}" ip4=1.2.3.4 >/dev/null
-if ! grep -q "ip4.addr = 1.2.3.4;" ${jail_conf};then
-    tap_fail "$t: ip4.addr in jail.conf"
-fi
-tap_pass "$t: ip4.addr in jail.conf"
+sjail create alcatraz "${release}" ip4=1.2.3.4 >/dev/null ||suicide
+grep -q "ip4.addr = 1.2.3.4;" ${jail_conf}
+tap_ok $? "$t: ip4.addr in jail.conf"
 sjail destroy alcatraz >/dev/null ||suicide
 
-sjail create alcatraz "${release}" ip6=fd10::1 >/dev/null
-if ! grep -q "ip6.addr = fd10::1;" ${jail_conf};then
-    tap_fail "$t: ip6.addr in jail.conf"
-fi
-tap_pass "$t: ip6.addr in jail.conf"
+sjail create alcatraz "${release}" ip6=fd10::1 >/dev/null ||suicide
+grep -q "ip6.addr = fd10::1;" ${jail_conf}
+tap_ok $? "$t: ip6.addr in jail.conf"
 sjail destroy alcatraz >/dev/null ||suicide
 
-sjail create alcatraz "${release}" ip4=1.2.3.4 ip6=fd10::1 >/dev/null
-if ! (grep -q "ip6.addr = fd10::1;" ${jail_conf} && \
-      grep -q "ip4.addr = 1.2.3.4;" ${jail_conf});then
-    tap_fail "$t: ipx.addr in jail.conf"
-fi
-tap_pass "$t: ipx.addr in jail.conf"
+sjail create alcatraz "${release}" ip4=1.2.3.4 ip6=fd10::1 >/dev/null ||suicide
+grep -q "ip6.addr = fd10::1;" ${jail_conf} && \
+    grep -q "ip4.addr = 1.2.3.4;" ${jail_conf}
+tap_ok $? "$t: ipx.addr in jail.conf"
 sjail destroy alcatraz >/dev/null ||suicide
 
 tap_end

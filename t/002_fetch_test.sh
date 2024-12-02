@@ -9,11 +9,9 @@ cleanup() {
 
 t="fetch"
 
-sjail fetch "$release"
+sjail fetch "$release" ||suicide
 
-if [ ! -e "${zfs_mount}/releases/${release}/COPYRIGHT" ]; then
-    tap_fail "$t: release fetched"
-fi
-tap_pass "$t: release fetched"
+[ -e "${zfs_mount}/releases/${release}/COPYRIGHT" ]
+tap_ok $? "$t: release fetched"
 
 tap_end
