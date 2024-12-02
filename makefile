@@ -20,5 +20,15 @@ check-root:
 ls-install:
 	ls -l /usr/local/bin/sjail /usr/local/share/sjail/* /usr/local/etc/sjail.conf.sample
 
+# SC3037 In POSIX sh, echo flags are undefined.
+# SC3043 In POSIX sh, 'local' is undefined.
+SHELLCHECK_OPTS = -e SC3037,SC3043
+
+.PHONY: lint
+lint:
+	shellcheck $(SHELLCHECK_OPTS) src/sjail
+	shellcheck $(SHELLCHECK_OPTS) -x src/sjail src/cmd.sh src/common.sh
+
+.PHONY: test
 test:
-	test.sh t/*
+	prove ./tests/*

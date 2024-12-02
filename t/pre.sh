@@ -9,7 +9,7 @@
 # make install
 # sjail init
 #
-set -eu
+set -e
 
 if [ "$(sysctl -n security.jail.jailed)" -eq 0 -a \
      "$(sysctl -n kern.vm_guest)" = none ]; then
@@ -19,25 +19,19 @@ fi
 
 trap cleanup 1 2 3 6 15
 cleanup() { # re-defined inside tests
-    echo "Done cleanup ... quitting."
+    echo "done cleanup ... quitting."
+}
+
+suicide() { # intended for non-test commands
+    echo "not ok unexpected error"
+    kill -HUP $$
 }
 
 . /usr/local/etc/sjail.conf
 
-fail() {
-    echo "❌ $1"
-    cleanup
-    exit 1
-}
-ok() {
-    echo "✔ $1"
-}
-suicide() { # intended for non-test commands
-    echo "❌ unexpected error"
-    kill -HUP $$
-}
+. t/tap.sh
 
-for f in "$@";do
-    echo "  -- Starting $f"
-    . $f
-done
+#
+# Global test variables
+#
+release="14.1-RELEASE"

@@ -1,14 +1,19 @@
 #!/bin/sh
+. t/pre.sh
 
-test_fetch() {
-    local t=test_fetch
-
-    sjail fetch 14.1-RELEASE
-
-    if [ ! -e ${zfs_mount}/releases/14.1-RELEASE/COPYRIGHT ]; then
-        fail "$t: release fetch incomplete"
-    fi
-
-    ok $t
+cleanup() {
+    zfs destroy ${zfs_dataset}/releases/${release} || true
+    tap_fail "unexpected error... cleaned up"
+    exit 1
 }
-test_fetch
+
+t="fetch"
+
+sjail fetch "$release"
+
+if [ ! -e "${zfs_mount}/releases/${release}/COPYRIGHT" ]; then
+    tap_fail "$t: release fetched"
+fi
+tap_pass "$t: release fetched"
+
+tap_end
