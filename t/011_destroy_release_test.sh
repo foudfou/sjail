@@ -1,0 +1,19 @@
+#!/bin/sh
+. t/pre.sh
+
+cleanup() {
+    zfs destroy "${zfs_dataset}/jails/j01" || true
+    tap_fail "unexpected error... cleaned up"
+    exit 1
+}
+
+t="destroy release"
+
+sjail create j01 "${release}" ip4=10.1.1.11 >/dev/null ||suicide
+
+sjail destroy-release "${release}" >/dev/null 2>&1; [ $? -ne 0 ]
+tap_ok $? "$t: prevent dependent release destroy"
+
+zfs destroy "${zfs_dataset}/jails/j01" ||suicide
+
+tap_end
