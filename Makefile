@@ -2,10 +2,10 @@ all:
 
 # We might want to package this at some point
 install: check-root
-	install -o root -g wheel sjail /usr/local/bin
+	install -o root -g wheel src/sjail /usr/local/bin
 	install -o root -g wheel -d /usr/local/share/sjail
-	install -o root -g wheel -m 644 cmd.sh common.sh /usr/local/share/sjail
-	install -o root -g wheel -m 644 sjail.conf.sample /usr/local/etc
+	install -o root -g wheel -m 644 src/cmd.sh src/common.sh /usr/local/share/sjail
+	install -o root -g wheel -m 644 src/sjail.conf.sample /usr/local/etc
 
 deinstall: check-root
 	rm /usr/local/bin/sjail
