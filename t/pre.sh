@@ -22,7 +22,6 @@ cleanup() { # re-defined inside tests
 }
 
 suicide() { # intended for non-test commands
-    echo "not ok unexpected error"
     kill -HUP $$
 }
 

@@ -212,7 +212,7 @@ sjail_list() {
 sjail_apply() {
     local jail_name="$1"
     local recipe_name="$2"
-    log "Applying recipe ${2} on jail ${1}"
+    log "Applying recipe ${2} on ${1}"
 
     local jail_path="${zfs_mount}/jails/${jail_name}"
 
@@ -228,6 +228,7 @@ sjail_apply() {
     . /usr/local/share/sjail/cmd.sh
     . "${recipe_path}"
 
+    log "Restarting ${jail_name}"
     jail -rc ${jail_name}
 }
 

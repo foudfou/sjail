@@ -2,9 +2,12 @@
 set -ue
 base_dir=$(dirname $(realpath $0))
 
+# These commands are used in the context of `sjail apply`, where important
+# global variables are provided and we run as root.
 
 CMD() {
-    jexec -l -u root "${jail_name}" "$@"
+    # jexec -U root would be redundant.
+    jexec -l "${jail_name}" "$@"
 }
 
 CONFIG() {
@@ -47,7 +50,8 @@ MOUNT() {
 }
 
 PKG() {
-    return
+    # Not using host: pkg -j "${jail_name}" install -y "$@"
+    jexec -l "${jail_name}" pkg install -y "$@"
 }
 
 EXPOSE() {
@@ -56,13 +60,10 @@ EXPOSE() {
 }
 
 SERVICE() {
-    return
+    jexec -l "${jail_name}" service "$@"
 }
 
 SYSRC() {
-    return
-}
-
-PKG() {
-    return
+    # Not using host: sysrc -j "${jail_name}" "$@"
+    jexec -l -U root "${jail_name}" sysrc "$@"
 }
