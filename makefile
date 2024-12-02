@@ -31,4 +31,4 @@ lint:
 
 .PHONY: test
 test:
-	prove ./tests/*
+	prove t/*_test.sh
