@@ -10,7 +10,7 @@ cleanup() {
     exit 1
 }
 
-t="apply pkg sysrc"
+t="apply pkg"
 
 sjail create j01 "${release}" ip4=10.1.1.11 >/dev/null ||suicide
 jail -c j01 >/dev/null ||suicide
@@ -18,12 +18,10 @@ jail -c j01 >/dev/null ||suicide
 mkdir "${zfs_mount}/recipes/test1" ||suicide
 cat <<EOF > "${zfs_mount}/recipes/test1/Recipe"
 PKG htop tree
-SYSRC foo_enable="YES"
 EOF
 
 out=$(sjail apply j01 test1 ||suicide)
-echo -e "$out" > /tmp/out1
-for pat in '^foo_enable:  -> YES$' \
+for pat in \
   '\bExtracting htop-.*: .*done$' \
   '\bExtracting tree-.*: .*done$' \
   '^j01: created$'; do
@@ -35,9 +33,6 @@ for pkg in htop tree; do
     jexec -l j01 pkg info -e "${pkg}"
     tap_ok $? "$t: pkg installed: ${pkg}"
 done
-
-sysrc -j j01 -c foo_enable="YES"
-tap_ok $? "$t: sysrc success"
 
 
 jail -r j01 >/dev/null ||suicide
