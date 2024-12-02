@@ -86,10 +86,9 @@ sjail_create() {
     local ip6=$(arg_get ip6 "$@")
     log "Creating thin jail: $jail_name"
 
+    zfs create -p "${zfs_dataset}/jails/${jail_name}"
+
     local jail_path="${zfs_mount}/jails/${jail_name}"
-
-    zfs create -p ${jail_path}
-
     cat <<EOF > ${jail_path}/fstab
 ${zfs_mount}/releases/${version} ${jail_path}/root/.ro nullfs ro 0 0
 EOF

@@ -1,4 +1,4 @@
-zfs_dataset="zroot/sjails"
-zfs_mount="/sjails"
+zfs_dataset="zroot/sjail"
+zfs_mount="/sjail"
 loopback="lo1"
 pf_ext_if="ext_if"

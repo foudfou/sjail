@@ -9,7 +9,7 @@ cleanup() {
 test_create() {
     local t=test_create
 
-    sjail create alcatraz 14.1-RELEASE >/dev/null
+    sjail create alcatraz 14.1-RELEASE >/dev/null ||suicide
 
     if ! zfs list -H ${zfs_dataset}/jails/alcatraz >/dev/null;then
         fail "$t: missing jail alcatraz"
@@ -31,7 +31,7 @@ test_create() {
         fail "$t: missing sysrc jail_list entry"
     fi
 
-    zfs destroy ${zfs_dataset}/jails/alcatraz
+    zfs destroy ${zfs_dataset}/jails/alcatraz ||suicide
 
     ok $t
 }
