@@ -49,7 +49,7 @@ test_start_stop() {
         fail "$t: pf table still has jail ip6 entry"
     fi
 
-    sjail destroy alcatraz
+    sjail destroy alcatraz >/dev/null
 
     ok $t
 }

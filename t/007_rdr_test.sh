@@ -27,7 +27,7 @@ test_rdr() {
 
     # --- Stop ---
 
-    jail -r alcatraz >/dev/null ||suicide
+    jail -r alcatraz >/dev/null 2>&1 ||suicide
 
     rdr=$(pfctl -a "rdr/alcatraz" -Psn 2> /dev/null)
     if (echo -e "${rdr}" | grep -q -E ' inet .* 1234 -> 10.1.1.11 port 5555'); then
@@ -37,7 +37,7 @@ test_rdr() {
         fail "$t: pf rdr ip6 rule not removed"
     fi
 
-    sjail destroy alcatraz ||suicide
+    sjail destroy alcatraz >/dev/null ||suicide
 
     ok $t
 }

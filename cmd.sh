@@ -30,8 +30,9 @@ pf_rdr_clear() {
     pfctl -a "rdr/${jail_name}" -Fn
 }
 
+
 CMD() {
-    return
+    jexec -l -u root "${jail_name}" "$@"
 }
 
 CONFIG() {
@@ -55,7 +56,18 @@ CP() {
 }
 
 INCLUDE() {
-    return
+    local tpl=$1; shift
+
+    while [ $# -gt 0 ]; do
+        local arg=$1; shift
+        if echo "$arg" | grep -q -E '[^= \t]+=[^= \t]+'; then
+            eval "local $arg"
+        else
+            log_fatal "argument invalid format: ${arg}"
+        fi
+    done
+
+    . "${zfs_mount}/templates/${tpl}"
 }
 
 MOUNT() {

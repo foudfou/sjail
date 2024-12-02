@@ -1,7 +1,7 @@
 #!/bin/sh
 
 log_fatal() {
-    echo "Error: $1" 1>&2
+    >&2 echo "Error: $1"
     exit 1
 }
 

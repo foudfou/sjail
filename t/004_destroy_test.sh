@@ -10,7 +10,7 @@ test_destroy() {
     local t=test_destroy
 
     sjail create alcatraz 14.1-RELEASE >/dev/null
-    sjail destroy alcatraz
+    sjail destroy alcatraz >/dev/null
 
     if zfs list -H ${zfs_pool}/jails/alcatraz 2>/dev/null;then
         fail "$t: jail pool not destroyed"
