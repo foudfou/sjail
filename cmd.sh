@@ -3,34 +3,6 @@ set -ue
 base_dir=$(dirname $(realpath $0))
 
 
-pf_rdr_add() {
-    local jail_name=$1 proto=$2 host_port=$3 jail_port=$4
-
-    local ext_if=$(prop_get ${pf_ext_if} /etc/pf.conf)
-
-    local jail_ip4=$(jail_conf_get "${jail_name}" ip4.addr)
-    if [ -n "$jail_ip4" ]; then
-        ( pfctl -a "rdr/${jail_name}" -Psn 2> /dev/null; # previous
-          echo "rdr pass on ${ext_if} inet proto ${proto}" \
-               "to port ${host_port} -> ${jail_ip4} port ${jail_port}" ) \
-            | pfctl -a "rdr/${jail_name}" -f-
-    fi
-
-    local jail_ip6=$(jail_conf_get "${jail_name}" ip6.addr)
-    if [ -n "$jail_ip6" ]; then
-        ( pfctl -a "rdr/${jail_name}" -Psn 2> /dev/null; # previous
-          echo "rdr pass on ${ext_if} inet6 proto ${proto}" \
-               "to port ${host_port} -> ${jail_ip6} port ${jail_port}" ) \
-            | pfctl -a "rdr/${jail_name}" -f-
-    fi
-}
-
-pf_rdr_clear() {
-    local jail_name=$1
-    pfctl -a "rdr/${jail_name}" -Fn
-}
-
-
 CMD() {
     jexec -l -u root "${jail_name}" "$@"
 }
@@ -56,7 +28,7 @@ CP() {
 }
 
 INCLUDE() {
-    local tpl=$1; shift
+    local recipe=$1; shift
 
     while [ $# -gt 0 ]; do
         local arg=$1; shift
@@ -67,7 +39,7 @@ INCLUDE() {
         fi
     done
 
-    . "${zfs_mount}/templates/${tpl}"
+    . "${zfs_mount}/recipes/${recipe}/Recipe"
 }
 
 MOUNT() {

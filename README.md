@@ -5,7 +5,7 @@ Simple thin jail management tool.
 Provides:
 
 1. a straightforward script to create/destroy jails
-2. templates in the form of shell scripts
+2. recipes in the form of shell scripts
 
 ## Motivation
 
@@ -26,22 +26,22 @@ Start by creating and reviewing `/usr/local/etc/sjail.conf`:
 
 Following commands are provided:
 
-| Init     | `sjail init`                                                            | Initial setup: zfs, sysrc, networking |
-| Fetch    | `sjail fetch 14.1-RELEASE`                                              |                                       |
-| Update   | `sjail update 14.1-RELEASE`                                             |                                       |
-| Create   | `sjail create alcatraz 14.1-RELEASE ip4=10.1.1.11 ip6=fd10:0:0:100::11` |                                       |
-| Destroy  | `sjail destroy alcatraz`                                                |                                       |
-| List     | `jls` or `sjail list` for all                                           |                                       |
-| Start    | `jail -c alcatraz`                                                      |                                       |
-| Stop     | `jail -r alcatraz`                                                      |                                       |
-| Template | `sjail apply alcatraz some/templ`                                       |                                       |
+| Init    | `sjail init`                                                            | Initial setup: zfs, sysrc, networking |
+| Fetch   | `sjail fetch 14.1-RELEASE`                                              |                                       |
+| Update  | `sjail update 14.1-RELEASE`                                             |                                       |
+| Create  | `sjail create alcatraz 14.1-RELEASE ip4=10.1.1.11 ip6=fd10:0:0:100::11` |                                       |
+| Destroy | `sjail destroy alcatraz`                                                |                                       |
+| List    | `jls` or `sjail list` for all                                           |                                       |
+| Start   | `jail -c alcatraz`                                                      |                                       |
+| Stop    | `jail -r alcatraz`                                                      |                                       |
+| Recipe  | `sjail apply alcatraz some/recipe`                                      |                                       |
 
-## Templates
+## Recipes
 
-Templates live by convention in `${zfs_mount}/templates`.
+Recipes live by convention in `${zfs_mount}/recipes`.
 
-Templates are directly inspired by Bastille. Templates are `sh` scripts and
-commands shell functions.
+Recipes are directly inspired by Bastille templates. Recipes are `sh` scripts
+and commands shell functions.
 
 | `CMD`     |                    |
 | `COPY`    | copies recursively |
@@ -87,7 +87,7 @@ Port forwarding is persisted to `${jail_path}/rdr.conf` as lines of the format
 `proto host_port client_port` lines. They are applied *for ip4 and ip6* via
 `pf` rdr rules on jail start and cleared on jail stop.
 
-`rdr.conf` can be created manually of via the template `EXPOSE` command.
+`rdr.conf` can be created manually of via the recipe `EXPOSE` command.
 
 ## Upgrade
 

@@ -3,7 +3,7 @@
 cleanup() {
     jail -r alcatraz || true
     zfs destroy ${zfs_pool}/jails/alcatraz || true
-    rm ${zfs_mount}/templates/*
+    rm -fr ${zfs_mount}/recipes/* || true
     echo "Done cleanup ... quitting."
     exit 1
 }
@@ -14,7 +14,8 @@ test_apply_cmd() {
     sjail create alcatraz 14.1-RELEASE ip4=10.1.1.11 >/dev/null ||suicide
     jail -c alcatraz >/dev/null ||suicide
 
-    cat <<EOF > "${zfs_mount}/templates/test1"
+    mkdir "${zfs_mount}/recipes/test1" ||suicide
+    cat <<EOF > "${zfs_mount}/recipes/test1/Recipe"
 foo=\${foo:-53}
 bar=\${bar:-0}
 buz=\${buz:-no}
@@ -38,7 +39,7 @@ EOF
 
     jail -r alcatraz >/dev/null ||suicide
     sjail destroy alcatraz >/dev/null ||suicide
-    rm ${zfs_mount}/templates/*
+    rm -fr ${zfs_mount}/recipes/* ||suicide
 
     ok $t
 }

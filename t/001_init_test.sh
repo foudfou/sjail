@@ -15,8 +15,8 @@ test_init() {
         fail "$t: missing zpool"
     fi
 
-    if ! zfs list -H ${zfs_pool}/templates >/dev/null;then
-        fail "$t: missing template zpool"
+    if ! zfs list -H ${zfs_pool}/recipes >/dev/null;then
+        fail "$t: missing recipe zpool"
     fi
 
     # FIXME how do we not mess with main /etc/jail.conf? vm?

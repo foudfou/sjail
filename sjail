@@ -17,8 +17,8 @@ sjail_init() {
 
     zfs create ${zfs_options} -o mountpoint=${zfs_mount} ${zfs_pool}
 
-    # templates arbitrarily in sjail pool
-    zfs create ${zfs_options} -p ${zfs_pool}/templates
+    # recipes arbitrarily in sjail pool
+    zfs create ${zfs_options} -p ${zfs_pool}/recipes
 
     if ! grep -q '.include "'${zfs_mount}/jails /etc/jail.conf; then
         cat <<EOF > /etc/jail.conf
@@ -199,8 +199,8 @@ sjail_list() {
 
 sjail_apply() {
     local jail_name="$1"
-    local template="$2"
-    log "Applying template ${2} on jail ${1}"
+    local recipe_name="$2"
+    log "Applying recipe ${2} on jail ${1}"
 
     local jail_path="${zfs_mount}/jails/${jail_name}"
 
@@ -208,22 +208,22 @@ sjail_apply() {
         log_fatal "jail must be running. Start first."
     fi
 
-    if [ ! -e "${zfs_mount}/templates/${template}" ]; then
-        log_fatal "template not found: ${zfs_mount}/templates/${template}"
+    local recipe_path="${zfs_mount}/recipes/${recipe_name}/Recipe"
+    if [ ! -e "${recipe_path}" ]; then
+        log_fatal "recipe not found: ${recipe_path}"
     fi
 
     . /usr/local/share/sjail/cmd.sh
-    . "${zfs_mount}/templates/${template}"
+    . "${recipe_path}"
 
     jail -rc ${jail_name}
 }
+
 
 # Additional jail start operations
 sjail_hook_start() {
     local jail_name="$1"
     local jail_path="${zfs_mount}/jails/${jail_name}"
-
-    . /usr/local/share/sjail/cmd.sh
 
     local ip4=$(jail_conf_get "${jail_name}" ip4.addr)
     local ip6=$(jail_conf_get "${jail_name}" ip6.addr) ip
@@ -244,8 +244,6 @@ sjail_hook_stop() {
     local jail_name="$1"
     local jail_path="${zfs_mount}/jails/${jail_name}"
 
-    . /usr/local/share/sjail/cmd.sh
-
     local ip4=$(jail_conf_get "${jail_name}" ip4.addr) ip
     local ip6=$(jail_conf_get "${jail_name}" ip6.addr)
     for ip in ${ip4} ${ip6}; do
@@ -257,6 +255,34 @@ sjail_hook_stop() {
     fi
 }
 
+pf_rdr_add() {
+    local jail_name=$1 proto=$2 host_port=$3 jail_port=$4
+
+    local ext_if=$(prop_get ${pf_ext_if} /etc/pf.conf)
+
+    local jail_ip4=$(jail_conf_get "${jail_name}" ip4.addr)
+    if [ -n "$jail_ip4" ]; then
+        ( pfctl -a "rdr/${jail_name}" -Psn 2> /dev/null; # previous
+          echo "rdr pass on ${ext_if} inet proto ${proto}" \
+               "to port ${host_port} -> ${jail_ip4} port ${jail_port}" ) \
+            | pfctl -a "rdr/${jail_name}" -f-
+    fi
+
+    local jail_ip6=$(jail_conf_get "${jail_name}" ip6.addr)
+    if [ -n "$jail_ip6" ]; then
+        ( pfctl -a "rdr/${jail_name}" -Psn 2> /dev/null; # previous
+          echo "rdr pass on ${ext_if} inet6 proto ${proto}" \
+               "to port ${host_port} -> ${jail_ip6} port ${jail_port}" ) \
+            | pfctl -a "rdr/${jail_name}" -f-
+    fi
+}
+
+pf_rdr_clear() {
+    local jail_name=$1
+    pfctl -a "rdr/${jail_name}" -Fn
+}
+
+
 usage() {
     cat <<EOF
 Usage: `basename $0` [-hv] command [args]
@@ -267,14 +293,14 @@ Options:
 
 Commands:
     init                 Setup zpool
-    fetch version        Fetch and create base template for version
+    fetch version        Fetch and create base image for version
                          (e.g. 14.1-RELEASE)
-    update version       Apply freebsd-update on base template with version.
+    update version       Apply freebsd-update on base image with version.
                          Can be done anytime.
-    create name version  Create thin jail from base template with version.
+    create name version  Create thin jail from base image with version.
     destroy name         Destroy thin jail.
     list                 List status of all jails.
-    apply name template  Apply template on jail.
+    apply name recipe    Apply recipe on jail.
 EOF
 }
 
