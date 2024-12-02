@@ -1,7 +1,7 @@
 #!/bin/sh
 #
 # cat <<EOF > /usr/local/etc/sjail.conf
-# zfs_pool="zroot/sjail"
+# zfs_dataset="zroot/sjail"
 # zfs_mount="/jails"
 # loopback="lo1"
 # pf_ext_if="ext_if"

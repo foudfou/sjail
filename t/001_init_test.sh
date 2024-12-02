@@ -2,7 +2,7 @@
 
 trap cleanup 1 2 3 6 15
 cleanup() {
-    zfs destroy -r ${zfs_pool} || true
+    zfs destroy -r ${zfs_dataset} || true
     echo "Done cleanup ... quitting."
 }
 
@@ -11,11 +11,11 @@ test_init() {
 
     sjail init
 
-    if ! zfs list -H ${zfs_pool} >/dev/null;then
+    if ! zfs list -H ${zfs_dataset} >/dev/null;then
         fail "$t: missing zpool"
     fi
 
-    if ! zfs list -H ${zfs_pool}/recipes >/dev/null;then
+    if ! zfs list -H ${zfs_dataset}/recipes >/dev/null;then
         fail "$t: missing recipe zpool"
     fi
 

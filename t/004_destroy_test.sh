@@ -2,7 +2,7 @@
 
 trap cleanup 1 2 3 6 15
 cleanup() {
-    zfs destroy ${zfs_pool}/jails/alcatraz 2>/dev/null || true
+    zfs destroy ${zfs_dataset}/jails/alcatraz 2>/dev/null || true
     echo "Done cleanup ... quitting."
 }
 
@@ -12,7 +12,7 @@ test_destroy() {
     sjail create alcatraz 14.1-RELEASE >/dev/null
     sjail destroy alcatraz >/dev/null
 
-    if zfs list -H ${zfs_pool}/jails/alcatraz 2>/dev/null;then
+    if zfs list -H ${zfs_dataset}/jails/alcatraz 2>/dev/null;then
         fail "$t: jail pool not destroyed"
     fi
 

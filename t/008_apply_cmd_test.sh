@@ -2,7 +2,7 @@
 
 cleanup() {
     jail -r alcatraz || true
-    zfs destroy ${zfs_pool}/jails/alcatraz || true
+    zfs destroy ${zfs_dataset}/jails/alcatraz || true
     rm -fr ${zfs_mount}/recipes/* || true
     echo "Done cleanup ... quitting."
     exit 1

@@ -2,7 +2,7 @@
 
 trap cleanup 1 2 3 6 15
 cleanup() {
-    zfs destroy ${zfs_pool}/jails/alcatraz 2>/dev/null || true
+    zfs destroy ${zfs_dataset}/jails/alcatraz 2>/dev/null || true
     echo "Done cleanup ... quitting."
 }
 

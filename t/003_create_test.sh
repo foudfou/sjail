@@ -2,7 +2,7 @@
 
 trap cleanup 1 2 3 6 15
 cleanup() {
-    zfs destroy ${zfs_pool}/jails/alcatraz 2>/dev/null || true
+    zfs destroy ${zfs_dataset}/jails/alcatraz 2>/dev/null || true
     echo "Done cleanup ... quitting."
 }
 
@@ -11,7 +11,7 @@ test_create() {
 
     sjail create alcatraz 14.1-RELEASE >/dev/null
 
-    if ! zfs list -H ${zfs_pool}/jails/alcatraz >/dev/null;then
+    if ! zfs list -H ${zfs_dataset}/jails/alcatraz >/dev/null;then
         fail "$t: missing jail alcatraz"
     fi
 
@@ -31,7 +31,7 @@ test_create() {
         fail "$t: missing sysrc jail_list entry"
     fi
 
-    zfs destroy ${zfs_pool}/jails/alcatraz
+    zfs destroy ${zfs_dataset}/jails/alcatraz
 
     ok $t
 }

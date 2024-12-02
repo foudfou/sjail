@@ -3,6 +3,10 @@ set -eu
 sjail=$(realpath $0)
 
 freebsd_url=https://download.freebsd.org/releases/amd64/amd64/
+# Not strictly necessary. zroot nowadays is created with compress=lz4 atime=off
+# and these are inherited by sub-datasets. This could still be useful when the
+# dataset in not on zroot. See
+# https://cgit.freebsd.org/src/tree/usr.sbin/bsdinstall/scripts/zfsboot?h=releng/14.1#n54
 zfs_options="-o compress=lz4 -o atime=off"
 
 . /usr/local/etc/sjail.conf
@@ -15,10 +19,10 @@ sjail_init() {
         log_fatal "missing /usr/local/etc/sjail.conf"
     fi
 
-    zfs create ${zfs_options} -o mountpoint=${zfs_mount} ${zfs_pool}
+    zfs create ${zfs_options} -o mountpoint=${zfs_mount} ${zfs_dataset}
 
     # recipes arbitrarily in sjail pool
-    zfs create ${zfs_options} -p ${zfs_pool}/recipes
+    zfs create -p ${zfs_dataset}/recipes
 
     if ! grep -q '.include "'${zfs_mount}/jails /etc/jail.conf; then
         cat <<EOF > /etc/jail.conf
@@ -43,7 +47,7 @@ sjail_fetch() {
         log_fatal "$version already fetched"
     fi
 
-    zfs create ${zfs_options} -p ${zfs_pool}/releases/${version}
+    zfs create -p ${zfs_dataset}/releases/${version}
 
     if [ -n "${nofetch}" ]; then
         fetch "${freebsd_url}/${version}/MANIFEST" -o /tmp/MANIFEST
@@ -82,9 +86,10 @@ sjail_create() {
     local ip6=$(arg_get ip6 "$@")
     log "Creating thin jail: $jail_name"
 
-    zfs create ${zfs_options} -p "${zfs_pool}/jails/${jail_name}"
-
     local jail_path="${zfs_mount}/jails/${jail_name}"
+
+    zfs create -p ${jail_path}
+
     cat <<EOF > ${jail_path}/fstab
 ${zfs_mount}/releases/${version} ${jail_path}/root/.ro nullfs ro 0 0
 EOF
@@ -164,7 +169,7 @@ sjail_destroy() {
         log_fatal "jail running. Stop first."
     fi
 
-    zfs destroy -r ${zfs_pool}/jails/${jail_name}
+    zfs destroy -r ${zfs_dataset}/jails/${jail_name}
 
     sysrc_silent jail_list-="${jail_name}"
 }
