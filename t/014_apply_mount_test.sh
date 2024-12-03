@@ -15,7 +15,7 @@ sjail create j01 "${release}" ip4=10.1.1.11 >/dev/null ||suicide
 jail -c j01 >/dev/null ||suicide
 
 mkdir "${zfs_mount}/recipes/test1" ||suicide
-cat <<EOF > "${zfs_mount}/recipes/test1/Recipe"
+cat <<EOF > "${zfs_mount}/recipes/test1/install.sh"
 MOUNT /usr/local/etc mnt/etc nullfs ro 0 0
 EOF
 

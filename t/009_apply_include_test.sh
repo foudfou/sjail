@@ -15,7 +15,7 @@ sjail create alcatraz "${release}" ip4=10.1.1.11 >/dev/null ||suicide
 jail -c alcatraz >/dev/null ||suicide
 
 mkdir "${zfs_mount}/recipes/test1" ||suicide
-cat <<EOF > "${zfs_mount}/recipes/test1/Recipe"
+cat <<EOF > "${zfs_mount}/recipes/test1/install.sh"
 foo=\${foo:-53}
 bar=\${bar:-0}
 buz=\${buz:-no}
@@ -25,7 +25,7 @@ CMD hostname
 EOF
 
 mkdir "${zfs_mount}/recipes/test2" ||suicide
-cat <<EOF > "${zfs_mount}/recipes/test2/Recipe"
+cat <<EOF > "${zfs_mount}/recipes/test2/install.sh"
 INCLUDE test1 foo=yes bar=1.34
 CMD sh -c 'echo i am g\$USER'
 EOF
@@ -43,7 +43,7 @@ do
 done
 
 
-cat <<EOF > "${zfs_mount}/recipes/test2/Recipe"
+cat <<EOF > "${zfs_mount}/recipes/test2/install.sh"
 INCLUDE test1 foo=yes badarg
 EOF
 

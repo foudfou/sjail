@@ -7,9 +7,9 @@ cleanup() {
     exit 1
 }
 
-t="fetch"
+t="release create"
 
-sjail fetch "$release" ||suicide
+sjail rel-create "$release" ||suicide
 
 [ -e "${zfs_mount}/releases/${release}/COPYRIGHT" ]
 tap_ok $? "$t: release fetched"

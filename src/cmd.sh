@@ -42,15 +42,14 @@ INCLUDE() {
         fi
     done
 
-    . "${zfs_mount}/recipes/${recipe}/Recipe"
+    . "${zfs_mount}/recipes/${recipe}/install.sh"
 }
 
+# No checks! Safety not guaranteed.
 MOUNT() {
-    local in="$*"
-
-    local src=$(echo "$in" | cut -d" " -f1)
-    local dst=$(echo "$in" | cut -d" " -f2)
-    local opts=$(echo "$in" | cut -d" " -f3-)
+    local src=$1; shift
+    local dst=$2; shift
+    local opts="$@"
 
     dst="${zfs_mount}/jails/${jail_name}/root/${dst}"
     [ -d "${dst}" ] || mkdir -p "${dst}"

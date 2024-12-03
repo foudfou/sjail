@@ -37,7 +37,7 @@ EOF
     service netif cloneup
 }
 
-sjail_fetch() {
+sjail_release_create() {
     local version="$1"
     local nofetch=$(arg_get nofetch "$@")
 
@@ -73,13 +73,14 @@ sjail_fetch() {
     done
 }
 
-sjail_update() {
+sjail_release_update() {
     local version="$1"
     log "Updating release ${version}"
     freebsd-update --currently-running ${version} -b ${zfs_mount}/releases/${version} fetch install
     # freebsd-update --currently-running ${version} -b ${zfs_mount}/releases/${version} IDS
 }
 
+# Only to avoid destroying a release on which some jails depend.
 sjail_release_destroy() {
     local version="$1"
     log "Destroying release ${version}"
@@ -220,7 +221,7 @@ sjail_apply() {
         log_fatal "jail must be running. Start first."
     fi
 
-    local recipe_path="${zfs_mount}/recipes/${recipe_name}/Recipe"
+    local recipe_path="${zfs_mount}/recipes/${recipe_name}/install.sh"
     if [ ! -e "${recipe_path}" ]; then
         log_fatal "recipe not found: ${recipe_path}"
     fi
@@ -306,16 +307,16 @@ Options:
     -v   verbose; show more information.
 
 Commands:
-    apply name recipe    Apply recipe on jail.
-    create name version  Create thin jail from base image version.
-    destroy name         Destroy thin jail.
-    destroy-release ver  Destroy base image version.
-    init                 Setup zpool
-    fetch version        Fetch and create base image version
-                         (e.g. 14.1-RELEASE)
-    list                 List status of all jails.
-    update version       Apply freebsd-update on base image with version.
-                         Can be done anytime.
+    apply        Apply recipe on jail. Args: name recipe
+    create       Create thin jail from base image. Args: name version
+    destroy      Destroy thin jail. Args: name
+    init         Setup zpool, sysrc, networking.
+    list         List status of all jails.
+    rel-create   Fetch and create base image. Args: version
+                 (e.g. 14.1-RELEASE). Opts: nofetch=1 skips download.
+    rel-destroy  Destroy base image. Args: version
+    rel-update   Apply freebsd-update on base image with version.
+                 Can be done anytime. Args: version
 EOF
 }
 
@@ -346,13 +347,13 @@ case $command in
     init)
         sjail_init
         ;;
-    fetch)
-        sjail_fetch "$@"
+    rel-create)
+        sjail_release_create "$@"
         ;;
-    update)
-        sjail_update "$@"
+    rel-update)
+        sjail_release_update "$@"
         ;;
-    destroy-release)
+    rel-destroy)
         sjail_release_destroy "$@"
         ;;
     create)

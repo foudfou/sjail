@@ -30,15 +30,21 @@ Creating and review `/usr/local/etc/sjail.conf`:
 
 Following commands are provided:
 
-| Init    | `sjail init`                                                            | Initial setup: zfs, sysrc, networking |
-| Fetch   | `sjail fetch 14.1-RELEASE`                                              |                                       |
-| Update  | `sjail update 14.1-RELEASE`                                             |                                       |
-| Create  | `sjail create alcatraz 14.1-RELEASE ip4=10.1.1.11 ip6=fd10:0:0:100::11` |                                       |
-| Destroy | `sjail destroy alcatraz`                                                |                                       |
-| List    | `jls` or `sjail list` for all                                           |                                       |
-| Start   | `jail -c alcatraz`                                                      |                                       |
-| Stop    | `jail -r alcatraz`                                                      |                                       |
-| Recipe  | `sjail apply alcatraz some/recipe`                                      |                                       |
+| Init            | `sjail init`                                                            |
+| Create release  | `sjail rel-create 14.1-RELEASE`                                         |
+| Update release  | `sjail rel-update 14.1-RELEASE`                                         |
+| Destroy release | `sjail rel-destroy 14.1-RELEASE`                                        |
+| Create jail     | `sjail create alcatraz 14.1-RELEASE ip4=10.1.1.11 ip6=fd10:0:0:100::11` |
+| Destroy jail    | `sjail destroy alcatraz`                                                |
+| List            | `jls` or `sjail list` for all                                           |
+| Start           | `jail -c alcatraz`                                                      |
+| Stop            | `jail -r alcatraz`                                                      |
+| Recipe          | `sjail apply alcatraz some/recipe`                                      |
+
+Compose your own:
+
+| forAll             | `jls name | xargs …`                             |
+| Pkg upgrade forAll | `jls name | xargs -I% jexec -l % pkg upgrade -y` |
 
 ## Recipes
 
