@@ -228,6 +228,7 @@ sjail_apply() {
     . /usr/local/share/sjail/cmd.sh
     . "${recipe_path}"
 
+    # needed for jail conf changes
     log "Restarting ${jail_name}"
     jail -rc ${jail_name}
 }

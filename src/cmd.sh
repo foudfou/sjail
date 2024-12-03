@@ -46,7 +46,23 @@ INCLUDE() {
 }
 
 MOUNT() {
-    return
+    local in="$*"
+
+    local src=$(echo "$in" | cut -d" " -f1)
+    local dst=$(echo "$in" | cut -d" " -f2)
+    local opts=$(echo "$in" | cut -d" " -f3-)
+
+    dst="${zfs_mount}/jails/${jail_name}/root/${dst}"
+    [ -d "${dst}" ] || mkdir -p "${dst}"
+
+    local line="${src} ${dst} ${opts}"
+    local fstab="${zfs_mount}/jails/${jail_name}/fstab"
+    if ! grep -qE "${line}" "${fstab}"; then
+        echo "$line" >> "${fstab}"
+    fi
+
+    # mount immediately otherwise jail -r will complain that dst is not mounted
+    mount -F "${fstab}" -a
 }
 
 PKG() {
