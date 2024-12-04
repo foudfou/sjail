@@ -28,8 +28,8 @@ out=$(sjail apply alcatraz test1 ||suicide)
 
 for want in \
     'foo=53 bar=0 buz=no' \
-        'uid=0(root) gid=0(wheel) groups=0(wheel)' \
-        'alcatraz'
+    'uid=0(root) gid=0(wheel) groups=0(wheel)' \
+    'alcatraz'
 do
     echo -e "${out}" | grep -q "${want}"
     tap_ok $? "$t: cmd success: ${want}"

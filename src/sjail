@@ -228,11 +228,13 @@ sjail_apply() {
     fi
 
     . /usr/local/share/sjail/cmd.sh
+    local needs_restart=0
     . "${recipe_path}"
 
-    # jail restart should not be needed: only CONF() may require it but takes
-    # care of it already.
-    #jail -rc ${jail_name}
+    if [ ${needs_restart} -gt 0 ];then
+        jail -rc ${jail_name}
+        log "[${jail_name}] ${HLINE} JAIL RESTARTED ${HLINE}"
+    fi
 }
 
 
@@ -250,7 +252,9 @@ sjail_hook_start() {
 
     if [ -e "${jail_path}/rdr.conf" ]; then
         while read line; do
-            grep -q -E '^(#|\s*$)' && continue
+            line=$(echo "${line}") # trim
+            [ ${#line} -eq 0 -o \
+              "$(printf %.1s "${line}")" = "#" ] && continue
             pf_rdr_add "$jail_name" ${line}
         done < "${jail_path}/rdr.conf"
     fi

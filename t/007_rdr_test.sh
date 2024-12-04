@@ -11,7 +11,15 @@ cleanup() {
 t="rdr"
 
 sjail create alcatraz "${release}" ip4=10.1.1.11 ip6=fd10::11 >/dev/null ||suicide
-echo -e "tcp 1234 5555\nudp 4321 9876" > "${zfs_mount}/jails/alcatraz/rdr.conf"
+
+# testing whitespace
+echo "   	" >> ${zfs_mount}/jails/alcatraz/rdr.conf
+cat <<EOF  >> "${zfs_mount}/jails/alcatraz/rdr.conf"
+# comments allowed
+tcp 1234 5555
+
+udp 1234 5555
+EOF
 
 # --- Start ---
 

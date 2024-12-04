@@ -9,8 +9,8 @@ cleanup() {
 
 t="release create"
 
-NOFETCH=""
-sjail rel-create "$release" "${NOFETCH}" >/dev/null ||suicide
+opts="" #"nofetch=1"
+sjail rel-create "$release" ${opts} ||suicide
 
 [ -e "${zfs_mount}/releases/${release}/COPYRIGHT" ]
 tap_ok $? "$t: release fetched"

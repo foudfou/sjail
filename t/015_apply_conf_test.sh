@@ -22,7 +22,10 @@ CONF mount.devfs
 CONF allow.set_hostname
 EOF
 
-sjail apply j01 test1 >/dev/null ||suicide
+out=$(sjail apply j01 test1 ||suicide)
+
+echo -e "${out}" | grep -qE "JAIL RESTARTED"
+tap_ok $? "$t: jail restarted"
 
 
 # grep jail.conf

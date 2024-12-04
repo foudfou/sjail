@@ -1,5 +1,7 @@
 #!/bin/sh
 
+HLINE="────"
+
 log_fatal() {
     >&2 echo "Error: $1"
     exit 1

@@ -9,12 +9,15 @@ set -ue
 
 
 CMD() {
+    log "[${jail_name}] ${HLINE} CMD $@ ${HLINE}"
     # jexec -U root would be redundant.
     jexec -l "${jail_name}" "$@"
 }
 
 CONF() {
     local param=$1
+    log "[${jail_name}] ${HLINE} CONF $@ ${HLINE}"
+
     # split string to array
     OIFS="$IFS"
     IFS='='
@@ -42,16 +45,36 @@ CONF() {
         sed -i '' 's|}|  '${k}' = '${v}';\'$'\n''}|' "${jail_path}/jail.conf"
     fi
 
-    # restarts the jails if needed
-    jail -mr "name=${jail_name}" "${param}"
+    # jail -mr "name=${jail_name}" "${param}"
+    needs_restart=$(($needs_restart+1))
 }
 
 CP() {
-    return
+    local src=$1
+    local dst=""
+    [ $# -gt 1 ] && dst=$2
+    log "[${jail_name}] ${HLINE} CP $@ ${HLINE}"
+
+    local recipe_path=$(dirname "${recipe_path}")
+    src="${recipe_path}/${src}"
+    dst="${zfs_mount}/jails/${jail_name}/root/${dst}"
+    # default mode for intermediate directories
+    mkdir -p "${dst}"
+    cp -a "${src}" "${dst}"
+}
+
+EXPOSE() {
+    local proto=$1 host_port=$2 jail_port=$3
+    log "[${jail_name}] ${HLINE} EXPOSE $@ ${HLINE}"
+
+    echo "${proto} ${host_port} ${jail_port}" >> "${jail_path}/rdr.conf"
+    needs_restart=$(($needs_restart+1))
 }
 
 INCLUDE() {
+    local args="$*"
     local recipe=$1; shift
+    log "[${jail_name}] ${HLINE} INCLUDE $args"
 
     while [ $# -gt 0 ]; do
         local arg=$1; shift
@@ -67,9 +90,11 @@ INCLUDE() {
 
 # No checks! Safety not guaranteed.
 MOUNT() {
+    local args="$*"
     local src=$1; shift
     local dst=$1; shift
     local opts="$@"
+    log "[${jail_name}] ${HLINE} INCLUDE $args"
 
     dst="${zfs_mount}/jails/${jail_name}/root/${dst}"
     [ -d "${dst}" ] || mkdir -p "${dst}"
@@ -85,20 +110,18 @@ MOUNT() {
 }
 
 PKG() {
+    log "[${jail_name}] ${HLINE} PKG $@ ${HLINE}"
     # Not using host: pkg -j "${jail_name}" install -y "$@"
     jexec -l "${jail_name}" pkg install -y "$@"
 }
 
-EXPOSE() {
-    local proto=$1 host_port=$2 jail_port=$3
-    echo "${proto} ${host_port} ${jail_port}" >> "${jail_path}/rdr.conf"
-}
-
 SERVICE() {
+    log "[${jail_name}] ${HLINE} SERVICE $@ ${HLINE}"
     jexec -l "${jail_name}" service "$@"
 }
 
 SYSRC() {
+    log "[${jail_name}] ${HLINE} SYSRC $@ ${HLINE}"
     # Not using host: sysrc -j "${jail_name}" "$@"
     jexec -l -U root "${jail_name}" sysrc "$@"
 }
