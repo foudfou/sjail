@@ -1,29 +1,49 @@
 #!/bin/sh
+# Commands are used in the context of `sjail apply`: important global
+# variables are available and the script runs as root.
+#
+# We need a running jail to apply recipes, because many operations need it (CMD
+# but also PKG, SYSRC or SERVICE), even when run from the host (pkg -j, sysrc
+# -j etc.)
 set -ue
-base_dir=$(dirname $(realpath $0))
 
-# These commands are used in the context of `sjail apply`, where important
-# global variables are provided and we run as root.
 
 CMD() {
     # jexec -U root would be redundant.
     jexec -l "${jail_name}" "$@"
 }
 
-CONFIG() {
+CONF() {
     local param=$1
+    # split string to array
+    OIFS="$IFS"
+    IFS='='
+    set ${1}
+    IFS="$OIFS"
 
-    local k=${param%%=*}
-    local v=${param##*=}
+    local k="${1}"
+    local v=""
+    [ $# -gt 1 ] && v="${2}"
 
-    # jail -m does not persist :(
+    # jail -m does not persist. sysrc -f not compatible with jail.conf. jail -e
+    # does variable expansion so we'd loose readability. We thus resort to wild
+    # pattern matching in jail.conf for now.
     #
     # TODO support += notation
-    if grep -m1 -E "${k}\s*=\s*${v}" "${jail_path}/jail.conf"; then
+    if [ -z "${v}" ]; then
+        if grep -m1 -qE "${k}\s*;" "${jail_path}/jail.conf"; then
+            :  # already set
+        else
+            sed -i '' 's|}|  '${k}';\'$'\n''}|' "${jail_path}/jail.conf"
+        fi
+    elif grep -m1 -qE "${k}\s*=\s*${v}" "${jail_path}/jail.conf"; then
         sed -i '' "s|${k} = .*;|${k} = ${v};|" "${jail_path}/jail.conf"
     else  # append
         sed -i '' 's|}|  '${k}' = '${v}';\'$'\n''}|' "${jail_path}/jail.conf"
     fi
+
+    # restarts the jails if needed
+    jail -mr "name=${jail_name}" "${param}"
 }
 
 CP() {
@@ -48,7 +68,7 @@ INCLUDE() {
 # No checks! Safety not guaranteed.
 MOUNT() {
     local src=$1; shift
-    local dst=$2; shift
+    local dst=$1; shift
     local opts="$@"
 
     dst="${zfs_mount}/jails/${jail_name}/root/${dst}"

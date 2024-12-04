@@ -23,8 +23,8 @@ EOF
 out=$(sjail apply j01 test1 ||suicide)
 for pat in \
   '\bExtracting htop-.*: .*done$' \
-  '\bExtracting tree-.*: .*done$' \
-  '^j01: created$'; do
+  '\bExtracting tree-.*: .*done$'
+do
     echo -e "${out}" | grep -qE "${pat}"
     tap_ok $? "$t: pkg success: ${pat}"
 done

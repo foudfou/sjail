@@ -77,7 +77,8 @@ sjail_release_update() {
     local version="$1"
     log "Updating release ${version}"
     freebsd-update --currently-running ${version} -b ${zfs_mount}/releases/${version} fetch install
-    # freebsd-update --currently-running ${version} -b ${zfs_mount}/releases/${version} IDS
+    # TODO uncomment when code stabilizes
+    #freebsd-update --currently-running ${version} -b ${zfs_mount}/releases/${version} IDS
 }
 
 # Only to avoid destroying a release on which some jails depend.
@@ -229,9 +230,9 @@ sjail_apply() {
     . /usr/local/share/sjail/cmd.sh
     . "${recipe_path}"
 
-    # needed for jail conf changes
-    log "Restarting ${jail_name}"
-    jail -rc ${jail_name}
+    # jail restart should not be needed: only CONF() may require it but takes
+    # care of it already.
+    #jail -rc ${jail_name}
 }
 
 
@@ -240,8 +241,9 @@ sjail_hook_start() {
     local jail_name="$1"
     local jail_path="${zfs_mount}/jails/${jail_name}"
 
-    local ip4=$(jail_conf_get "${jail_name}" ip4.addr)
-    local ip6=$(jail_conf_get "${jail_name}" ip6.addr) ip
+    local ip4=$(jail_conf_get_val "${jail_name}" ip4.addr)
+    local ip6=$(jail_conf_get_val "${jail_name}" ip6.addr)
+    local ip
     for ip in ${ip4} ${ip6}; do
         pfctl -q -t jails -T add "${ip}"
     done
@@ -259,8 +261,9 @@ sjail_hook_stop() {
     local jail_name="$1"
     local jail_path="${zfs_mount}/jails/${jail_name}"
 
-    local ip4=$(jail_conf_get "${jail_name}" ip4.addr) ip
-    local ip6=$(jail_conf_get "${jail_name}" ip6.addr)
+    local ip4=$(jail_conf_get_val "${jail_name}" ip4.addr)
+    local ip6=$(jail_conf_get_val "${jail_name}" ip6.addr)
+    local ip
     for ip in ${ip4} ${ip6}; do
         pfctl -q -t jails -T delete "${ip}"
     done
@@ -275,7 +278,7 @@ pf_rdr_add() {
 
     local ext_if=$(prop_get ${pf_ext_if} /etc/pf.conf)
 
-    local jail_ip4=$(jail_conf_get "${jail_name}" ip4.addr)
+    local jail_ip4=$(jail_conf_get_val "${jail_name}" ip4.addr)
     if [ -n "$jail_ip4" ]; then
         ( pfctl -a "rdr/${jail_name}" -Psn 2> /dev/null; # previous
           echo "rdr pass on ${ext_if} inet proto ${proto}" \
@@ -283,7 +286,7 @@ pf_rdr_add() {
             | pfctl -a "rdr/${jail_name}" -f-
     fi
 
-    local jail_ip6=$(jail_conf_get "${jail_name}" ip6.addr)
+    local jail_ip6=$(jail_conf_get_val "${jail_name}" ip6.addr)
     if [ -n "$jail_ip6" ]; then
         ( pfctl -a "rdr/${jail_name}" -Psn 2> /dev/null; # previous
           echo "rdr pass on ${ext_if} inet6 proto ${proto}" \

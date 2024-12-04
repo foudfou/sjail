@@ -9,28 +9,39 @@ cleanup() {
     exit 1
 }
 
-t="apply mount"
+t="apply conf"
 
 sjail create j01 "${release}" ip4=10.1.1.11 >/dev/null ||suicide
 jail -c j01 >/dev/null ||suicide
 
 mkdir "${zfs_mount}/recipes/test1" ||suicide
 cat <<EOF > "${zfs_mount}/recipes/test1/install.sh"
-MOUNT /usr/local/etc mnt/etc nullfs ro 0 0
+CONF sysvshm=new
+CONF allow.mlock=1;
+CONF mount.devfs
+CONF allow.set_hostname
 EOF
 
 sjail apply j01 test1 >/dev/null ||suicide
 
 
-# grep fstab
-dst="${zfs_mount}/jails/j01/root/mnt/etc"
-line="/usr/local/etc ${dst} nullfs ro 0 0"
-grep -qE '^'"${line}"'$' "${zfs_mount}/jails/j01/fstab"
-tap_ok $? "$t: fstab updated"
+# grep jail.conf
+. /usr/local/share/sjail/common.sh
+param=$(jail_conf_get_val j01 sysvshm)
+tap_cmp "${param}" new
 
-# check mounted
-mount | grep -qw "${dst}"
-tap_ok $? "$t: mounted"
+param=$(jail_conf_get_val j01 allow.mlock)
+tap_cmp "${param}" 1
+
+param=$(jail_conf_get_bool j01 mount.devfs)
+tap_cmp "${param}" "mount.devfs"
+
+param=$(jail_conf_get_bool j01 allow.set_hostname)
+tap_cmp "${param}" "allow.set_hostname"
+
+# unset
+param=$(jail_conf_get_bool j01 allow.mount.zfs)
+tap_cmp "${param}" ""
 
 
 jail -r j01 >/dev/null ||suicide

@@ -53,14 +53,17 @@ Recipes live by convention in `${zfs_mount}/recipes`.
 Recipes are directly inspired by Bastille templates[^1]. Recipes are `sh` scripts
 and commands shell functions.
 
-| `CMD`     |                    |
-| `COPY`    | copies recursively |
-| `INCLUDE` |                    |
-| `MOUNT`   |                    |
-| `PKG`     |                    |
-| `EXPOSE`  |                    |
-| `SERVICE` |                    |
-| `SYSRC`   |                    |
+Note the compatibility changes (**breaking compat**) when migrating from Bastille.
+
+| `CMD`     |                                                         |
+| `CONF`    | **breaking compat**: name change + no `set` sub-command |
+| `CP`      | copies recursively                                      |
+| `INCLUDE` |                                                         |
+| `MOUNT`   |                                                         |
+| `PKG`     |                                                         |
+| `EXPOSE`  | **breaking compat**: name change                        |
+| `SERVICE` |                                                         |
+| `SYSRC`   |                                                         |
 
 ## Networking
 
