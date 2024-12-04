@@ -50,20 +50,25 @@ Compose your own:
 
 Recipes live by convention in `${zfs_mount}/recipes`.
 
-Recipes are directly inspired by Bastille templates[^1]. Recipes are `sh` scripts
-and commands shell functions.
+Recipes are directly inspired by Bastille templates[^1]. A recipe is comprised
+of:
+
+1. A mandatory `apply.sh` file which contains *commands*.
+2. Optional files to be deployed via the `CP` command.
+
+`apply.sh` is a shell script[^2]. Commands are shell functions.
+
+| `CMD`     |                                                      |
+| `CONF`    | **breaking compat**: name change + no `set` argument |
+| `CP`      | copies recursively                                   |
+| `INCLUDE` |                                                      |
+| `MOUNT`   |                                                      |
+| `PKG`     |                                                      |
+| `EXPOSE`  | **breaking compat**: name change                     |
+| `SERVICE` |                                                      |
+| `SYSRC`   |                                                      |
 
 Note the compatibility changes (**breaking compat**) when migrating from Bastille.
-
-| `CMD`     |                                                         |
-| `CONF`    | **breaking compat**: name change + no `set` sub-command |
-| `CP`      | copies recursively                                      |
-| `INCLUDE` |                                                         |
-| `MOUNT`   |                                                         |
-| `PKG`     |                                                         |
-| `EXPOSE`  | **breaking compat**: name change                        |
-| `SERVICE` |                                                         |
-| `SYSRC`   |                                                         |
 
 ## Networking
 
@@ -125,3 +130,6 @@ in an isolated environment.
 - [Bastille](https://github.com/bastilleBSD/bastille)
 
 [^1]: themselves inspired by Salt and Docker.
+
+[^2]: One can in theory write `sh` in it and sjail's variables are exposed. But
+    so far Bastille commands have fulfilled the needs of many.

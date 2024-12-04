@@ -222,7 +222,7 @@ sjail_apply() {
         log_fatal "jail must be running. Start first."
     fi
 
-    local recipe_path="${zfs_mount}/recipes/${recipe_name}/install.sh"
+    local recipe_path="${zfs_mount}/recipes/${recipe_name}/apply.sh"
     if [ ! -e "${recipe_path}" ]; then
         log_fatal "recipe not found: ${recipe_path}"
     fi

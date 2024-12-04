@@ -15,7 +15,8 @@ sjail create alcatraz "${release}" ip4=10.1.1.11 >/dev/null ||suicide
 jail -c alcatraz >/dev/null ||suicide
 
 mkdir "${zfs_mount}/recipes/test1" ||suicide
-cat <<EOF > "${zfs_mount}/recipes/test1/install.sh"
+cat <<EOF > "${zfs_mount}/recipes/test1/apply.sh"
+echo recipe_path=\${recipe_path} # test1
 foo=\${foo:-53}
 bar=\${bar:-0}
 buz=\${buz:-no}
@@ -25,8 +26,10 @@ CMD hostname
 EOF
 
 mkdir "${zfs_mount}/recipes/test2" ||suicide
-cat <<EOF > "${zfs_mount}/recipes/test2/install.sh"
+cat <<EOF > "${zfs_mount}/recipes/test2/apply.sh"
+echo recipe_path=\${recipe_path} # test2
 INCLUDE test1 foo=yes bar=1.34
+echo recipe_path=\${recipe_path} # test2
 CMD sh -c 'echo i am g\$USER'
 EOF
 
@@ -34,16 +37,18 @@ out=$(sjail apply alcatraz test2 ||suicide)
 
 for want in \
     'foo=yes bar=1.34 buz=no' \
-        'uid=0(root) gid=0(wheel) groups=0(wheel)' \
-        'alcatraz' \
-        'i am groot'
+    'uid=0(root) gid=0(wheel) groups=0(wheel)' \
+    'alcatraz' \
+    'i am groot' \
+    "${zfs_mount}/recipes/test1/apply.sh" \
+    "${zfs_mount}/recipes/test2/apply.sh"
 do
     echo -e "${out}" | grep -q "${want}"
     tap_ok $? "$t: include success: ${want}"
 done
 
 
-cat <<EOF > "${zfs_mount}/recipes/test2/install.sh"
+cat <<EOF > "${zfs_mount}/recipes/test2/apply.sh"
 INCLUDE test1 foo=yes badarg
 EOF
 

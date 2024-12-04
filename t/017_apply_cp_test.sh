@@ -22,7 +22,7 @@ mkdir -p "${recipe_path}/usr/local/etc"
 touch "${recipe_path}/usr/local/etc/bar.conf"
 chown operator "${recipe_path}/usr/local/etc/bar.conf"
 
-cat <<EOF > "${recipe_path}/install.sh"
+cat <<EOF > "${recipe_path}/apply.sh"
 # OVERLAY style
 CP etc
 CP usr/local/etc/bar.conf usr/local/etc

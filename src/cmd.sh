@@ -7,15 +7,19 @@
 # -j etc.)
 set -ue
 
+log_cmd() {
+    log "[${jail_name}] ${HLINE} $@ ${HLINE}"
+}
 
 CMD() {
-    log "[${jail_name}] ${HLINE} CMD $@ ${HLINE}"
+    log_cmd "CMD $@"
     # jexec -U root would be redundant.
     jexec -l "${jail_name}" "$@"
 }
 
 CONF() {
     local param=$1
+    log_cmd "CMD $@"
     log "[${jail_name}] ${HLINE} CONF $@ ${HLINE}"
 
     # split string to array
@@ -53,6 +57,7 @@ CP() {
     local src=$1
     local dst=""
     [ $# -gt 1 ] && dst=$2
+    log_cmd "CMD $@"
     log "[${jail_name}] ${HLINE} CP $@ ${HLINE}"
 
     local recipe_path=$(dirname "${recipe_path}")
@@ -65,6 +70,7 @@ CP() {
 
 EXPOSE() {
     local proto=$1 host_port=$2 jail_port=$3
+    log_cmd "CMD $@"
     log "[${jail_name}] ${HLINE} EXPOSE $@ ${HLINE}"
 
     echo "${proto} ${host_port} ${jail_port}" >> "${jail_path}/rdr.conf"
@@ -74,7 +80,7 @@ EXPOSE() {
 INCLUDE() {
     local args="$*"
     local recipe=$1; shift
-    log "[${jail_name}] ${HLINE} INCLUDE $args"
+    log_cmd "INCLUDE $@"
 
     while [ $# -gt 0 ]; do
         local arg=$1; shift
@@ -85,7 +91,9 @@ INCLUDE() {
         fi
     done
 
-    . "${zfs_mount}/recipes/${recipe}/install.sh"
+    # update context
+    local recipe_path="${zfs_mount}/recipes/${recipe}/apply.sh"
+    . "${recipe_path}"
 }
 
 # No checks! Safety not guaranteed.
@@ -94,7 +102,7 @@ MOUNT() {
     local src=$1; shift
     local dst=$1; shift
     local opts="$@"
-    log "[${jail_name}] ${HLINE} INCLUDE $args"
+    log_cmd "MOUNT ${args}"
 
     dst="${zfs_mount}/jails/${jail_name}/root/${dst}"
     [ -d "${dst}" ] || mkdir -p "${dst}"
@@ -110,18 +118,18 @@ MOUNT() {
 }
 
 PKG() {
-    log "[${jail_name}] ${HLINE} PKG $@ ${HLINE}"
+    log_cmd "PKG $@"
     # Not using host: pkg -j "${jail_name}" install -y "$@"
     jexec -l "${jail_name}" pkg install -y "$@"
 }
 
 SERVICE() {
-    log "[${jail_name}] ${HLINE} SERVICE $@ ${HLINE}"
+    log_cmd "SERVICE $@"
     jexec -l "${jail_name}" service "$@"
 }
 
 SYSRC() {
-    log "[${jail_name}] ${HLINE} SYSRC $@ ${HLINE}"
+    log_cmd "SYSRC $@"
     # Not using host: sysrc -j "${jail_name}" "$@"
     jexec -l -U root "${jail_name}" sysrc "$@"
 }

@@ -15,7 +15,7 @@ sjail create alcatraz "${release}" ip4=10.1.1.11 >/dev/null ||suicide
 jail -c alcatraz >/dev/null ||suicide
 
 mkdir "${zfs_mount}/recipes/test1" ||suicide
-cat <<EOF > "${zfs_mount}/recipes/test1/install.sh"
+cat <<EOF > "${zfs_mount}/recipes/test1/apply.sh"
 foo=\${foo:-53}
 bar=\${bar:-0}
 buz=\${buz:-no}
