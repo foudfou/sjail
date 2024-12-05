@@ -23,6 +23,8 @@ Provides:
 
 Creating and review `/usr/local/etc/sjail.conf`:
 
+|               |                                                               |
+|---------------|---------------------------------------------------------------|
 | `zfs_dataset` | the pool to store all sjail data                              |
 | `zfs_mount`   | mountpoint for sjail data                                     |
 | `loopback`    | the cloned loopback interface for jails                       |
@@ -30,6 +32,8 @@ Creating and review `/usr/local/etc/sjail.conf`:
 
 Following commands are provided:
 
+|                 |                                                                         |
+|-----------------|-------------------------------------------------------------------------|
 | Init            | `sjail init`                                                            |
 | Create release  | `sjail rel-create 14.1-RELEASE`                                         |
 | Update release  | `sjail rel-update 14.1-RELEASE`                                         |
@@ -43,8 +47,11 @@ Following commands are provided:
 
 Compose your own:
 
-| forAll             | `jls name | xargs …`                             |
-| Pkg upgrade forAll | `jls name | xargs -I% jexec -l % pkg upgrade -y` |
+|                    |                                                   |
+|--------------------|---------------------------------------------------|
+| forAll             | `jls name \| xargs …`                             |
+| Pkg upgrade forAll | `jls name \| xargs -I% jexec -l % pkg upgrade -y` |
+|                    |                                                   |
 
 ## Recipes
 
@@ -58,6 +65,8 @@ of:
 
 `apply.sh` is a shell script[^2]. Commands are shell functions.
 
+|           |                                                      |
+|-----------|------------------------------------------------------|
 | `CMD`     |                                                      |
 | `CONF`    | **breaking compat**: name change + no `set` argument |
 | `CP`      | copies recursively                                   |
@@ -109,7 +118,7 @@ via `pf` rdr rules on jail start and cleared on jail stop.
 
 ## Upgrade
 
-Provided the jails doesn't hold important state, upgrading to a new minor or
+Provided the jails don't hold important state, upgrading to a new minor or
 major release is best done by re-creating them.
 
 For minor release changes, pointing the jails' `fstab`s to the new release
@@ -128,6 +137,7 @@ in an isolated environment.
 
 - [simple-jails](https://github.com/jpdasma/simple-jails)
 - [Bastille](https://github.com/bastilleBSD/bastille)
+- [tap.sh](https://github.com/dnmfarrell/tap.sh)
 
 [^1]: themselves inspired by Salt and Docker.
 
