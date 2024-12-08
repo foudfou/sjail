@@ -25,7 +25,7 @@ prop_get() {
 
 arg_get() {
     local opt=$1; shift
-    echo "$@" | awk 'BEGIN{RS=" ";FS="="} /'${opt}'/ {print $2}'
+    echo "$@" | awk 'BEGIN{RS=" ";FS="="} /^'${opt}'=/ {print $2}'
 }
 
 output_get_word() {

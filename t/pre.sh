@@ -1,14 +1,4 @@
 #!/bin/sh
-#
-# cat <<EOF > /usr/local/etc/sjail.conf
-# zfs_dataset="zroot/sjail"
-# zfs_mount="/jails"
-# loopback="lo1"
-# pf_ext_if="ext_if"
-# EOF
-# make install
-# sjail init
-#
 
 if [ "$(sysctl -n security.jail.jailed)" -eq 0 -a \
      "$(sysctl -n kern.vm_guest)" = none ]; then

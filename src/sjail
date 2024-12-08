@@ -32,9 +32,6 @@ EOF
 
     sysrc_silent jail_enable="YES"
     sysrc_silent jail_parallel_start="YES"
-
-    sysrc_silent cloned_interfaces+="${loopback}"
-    service netif cloneup
 }
 
 sjail_release_create() {
@@ -99,6 +96,9 @@ sjail_create() {
     local version="$1"; shift
     local ip4=$(arg_get ip4 "$@")
     local ip6=$(arg_get ip6 "$@")
+    local iface=$(arg_get iface "$@")
+    [ -z "${iface}" ] && iface="${interface}"
+
     log "Creating thin jail: $jail_name"
 
     zfs create -p "${zfs_dataset}/jails/${jail_name}"
@@ -119,6 +119,14 @@ EOF
         ip6_mode="ip6 = new;"
     fi
 
+    local hooks=""
+    if [ "$(printf %.2s ${iface})" = "lo" ]; then
+        hooks="
+  exec.poststart += \"${sjail} _hook_start \$name\";
+  exec.prestop   += \"${sjail} _hook_stop \$name\";
+"
+    fi
+
     cat << EOF > "${jail_path}/jail.conf"
 ${jail_name} {
   host.hostname = ${jail_name};
@@ -130,8 +138,7 @@ ${jail_name} {
   exec.stop = '/bin/sh /etc/rc.shutdown';
   exec.prestart  += "cp /etc/resolv.conf \$path/etc/resolv.conf";
   exec.prestart  += "cp /etc/localtime \$path/etc";
-  exec.poststart += "${sjail} _hook_start \$name";
-  exec.prestop   += "${sjail} _hook_stop \$name";
+  ${hooks}
   exec.poststop  += "rm \$path/etc/resolv.conf";
   exec.poststop  += "rm \$path/etc/localtime";
 
@@ -142,7 +149,7 @@ ${jail_name} {
 
   securelevel = 2;
 
-  interface = ${loopback};
+  interface = ${iface};
   ${ip4_addr}
   ${ip6_addr}
   ${ip6_mode}
@@ -316,6 +323,7 @@ Options:
 Commands:
     apply        Apply recipe on jail. Args: name recipe
     create       Create thin jail from base image. Args: name version
+                 [ip4 ip6 iface]
     destroy      Destroy thin jail. Args: name
     init         Setup zpool, sysrc, networking.
     list         List status of all jails.

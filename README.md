@@ -13,7 +13,7 @@ Provides:
 - Limited rigid feature set:
   - Leverage jail(8) as much as possible;
   - Thin jails only;
-  - Networking via cloned loopback interface, with `pf` redirecting rules;
+  - Networking via cloned loopback interface or shared interface;
 
 ## Usage
 
@@ -21,14 +21,22 @@ Provides:
 # make install
 ```
 
-Creating and review `/usr/local/etc/sjail.conf`:
+For loopback networking (optional):
 
-|               |                                                               |
-|---------------|---------------------------------------------------------------|
-| `zfs_dataset` | the pool to store all sjail data                              |
-| `zfs_mount`   | mountpoint for sjail data                                     |
-| `loopback`    | the cloned loopback interface for jails                       |
-| `pf_ext_if`   | the external interface on which traffic for jails is expected |
+```
+# sysrc cloned_interfaces+="lo1"
+# service netif cloneup
+```
+
+Create and review `/usr/local/etc/sjail.conf`:
+
+|               |                                                                                                  |
+|---------------|--------------------------------------------------------------------------------------------------|
+| `zfs_dataset` | pool to store all sjail data                                                                     |
+| `zfs_mount`   | mountpoint for sjail data                                                                        |
+| `interface`   | interface to attach jails to                                                                     |
+| `pf_ext_if`   | the external interface on which traffic for jails is expected (relevant for loopback networking) |
+
 
 Following commands are provided:
 
@@ -57,8 +65,8 @@ Compose your own:
 
 Recipes live by convention in `${zfs_mount}/recipes`.
 
-Recipes are directly inspired by Bastille templates[^1]. A recipe is comprised
-of:
+Recipes are directly inspired by Bastille templates[^1]. A recipe is a
+directory comprised of:
 
 1. A mandatory `apply.sh` file which contains *commands*.
 2. Optional files to be deployed via the `CP` command.
@@ -81,8 +89,18 @@ Note the compatibility changes (**breaking compat**) when migrating from Bastill
 
 ## Networking
 
-Sjail only allows for a cloned loopback interface setup. Traffic to from the
-host to jails is enabled with `pf`:
+Sjail only supports these networking setups: shared interface or cloned
+loopback interface.
+
+### Shared interface
+
+Jails' IPs are attached to the host's external interface and thus accessible to
+the local network. No specific `pf` adaptation is required.
+
+### Cloned loopback
+
+Jails' IPs are attached to a clone loopback interface. Traffic between host and
+jails is enabled with `pf`: outgoing via NAT, incoming via RDR.
 
 ```
 ext_if=vtnet0
