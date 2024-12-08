@@ -43,7 +43,7 @@ tap_ok $? "$t: single relative"
 src="${recipe_path}/usr/local/etc/bar.conf"
 stat_src=$(stat -f '%Op %Su %Sg' "${src}")
 stat_dst=$(stat -f '%Op %Su %Sg' "${dst}")
-tap_cmp "${stat_src}" "${stat_dst}"
+tap_cmp "${stat_src}" "${stat_dst}" "$t: file stats cmp"
 
 
 

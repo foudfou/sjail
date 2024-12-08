@@ -19,8 +19,7 @@ CMD() {
 
 CONF() {
     local param=$1
-    log_cmd "CMD $@"
-    log "[${jail_name}] ${HLINE} CONF $@ ${HLINE}"
+    log_cmd "CONF $@"
 
     # split string to array
     OIFS="$IFS"
@@ -57,8 +56,7 @@ CP() {
     local src=$1
     local dst=""
     [ $# -gt 1 ] && dst=$2
-    log_cmd "CMD $@"
-    log "[${jail_name}] ${HLINE} CP $@ ${HLINE}"
+    log_cmd "CP $@"
 
     local recipe_path=$(dirname "${recipe_path}")
     src="${recipe_path}/${src}"
@@ -70,8 +68,7 @@ CP() {
 
 EXPOSE() {
     local proto=$1 host_port=$2 jail_port=$3
-    log_cmd "CMD $@"
-    log "[${jail_name}] ${HLINE} EXPOSE $@ ${HLINE}"
+    log_cmd "EXPOSE $@"
 
     echo "${proto} ${host_port} ${jail_port}" >> "${jail_path}/rdr.conf"
     needs_restart=$(($needs_restart+1))
@@ -80,7 +77,7 @@ EXPOSE() {
 INCLUDE() {
     local args="$*"
     local recipe=$1; shift
-    log_cmd "INCLUDE $@"
+    log_cmd "INCLUDE ${args}"
 
     while [ $# -gt 0 ]; do
         local arg=$1; shift
