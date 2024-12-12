@@ -75,7 +75,7 @@ directory comprised of:
 
 |           |                                                      |
 |-----------|------------------------------------------------------|
-| `CMD`     |                                                      |
+| `CMD`     | arguments executed inside `sh -c`                    |
 | `CONF`    | **breaking compat**: name change + no `set` argument |
 | `CP`      | copies recursively                                   |
 | `INCLUDE` |                                                      |
@@ -85,7 +85,28 @@ directory comprised of:
 | `SERVICE` |                                                      |
 | `SYSRC`   |                                                      |
 
-Note the compatibility changes (**breaking compat**) when migrating from Bastille.
+### Compatibility with Bastille
+
+When migrating template/recipes from Bastille, here's a little checklist:
+
+- command names; see **breaking compat** in the previous table
+- `ARG` is replaced with the `sh` equivalent:
+  ```diff
+  -ARG php_prefix=php82
+  +php_prefix=${php_prefix:-php82}
+  ```
+- `INCLUDE` arguments are also replaced with the `sh` equivalent:
+  ```diff
+  -INCLUDE my/service-php --arg php_prefix=php82
+  +INCLUDE my/service-php php_prefix=php82
+  ```
+
+Optional arguments must still be defined:
+
+```sh
+maxmemory=${maxmemory:-}
+maxmemory_policy=${maxmemory_policy:-}
+```
 
 ## Networking
 

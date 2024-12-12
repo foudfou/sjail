@@ -30,7 +30,10 @@ mkdir "${zfs_mount}/recipes/test2" ||suicide
 cat <<EOF > "${zfs_mount}/recipes/test2/apply.sh"
 INCLUDE test1 foo=yes bar=1.34
 echo recipe_path=\${recipe_path} # test2
-CMD sh -c 'echo i am g\$USER'
+CMD echo i am g\$USER
+# Nested shell is tricky because of quote escaping.
+#CMD sh -c 'echo i am g\$USER'
+jexec -l \${jail_name} sh -c 'echo toor\\\\$HOME'
 EOF
 
 out=$(sjail apply alcatraz test2 ||suicide)
@@ -39,7 +42,8 @@ for want in \
     'foo=yes bar=1.34 buz=no' \
     'uid=0(root) gid=0(wheel) groups=0(wheel)' \
     'alcatraz' \
-    'i am groot'
+    'i am groot' \
+    'toor\\/root'
 do
     echo -e "${out}" | grep -q "${want}"
     tap_ok $? "$t: include success: ${want}"

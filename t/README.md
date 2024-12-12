@@ -41,3 +41,15 @@ Reset with
 zfs destroy -r zroot/sjail
 sysrc jail_list=""
 ```
+
+## Development
+
+* Watch out for escaping `$` in string definitions:
+
+  ```
+  cat <<EOF > "${zfs_mount}/jails/j01/root/tmp/postinstall.sh"
+  #!/bin/sh
+  [ -n "\$var1" ] && echo "got var1!"
+  true # don't fail caller
+  EOF
+ ```

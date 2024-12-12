@@ -13,8 +13,10 @@ log_cmd() {
 
 CMD() {
     log_cmd "CMD $@"
-    # jexec -U root would be redundant.
-    jexec -l "${jail_name}" "$@"
+
+    # `sh -c` allows for passing env vars (`CMD var1=1 program`) and
+    # redirection `CMD "echo OK > /tmp/ok"`, yet making `CMD sh -c` trickier.
+    jexec -l "${jail_name}" sh -c "$*"
 }
 
 CONF() {
