@@ -345,6 +345,11 @@ case "$1" in
         usage
         exit 0
         ;;
+    version|--version)
+        . /usr/local/share/sjail/version.sh
+        echo "${SJAIL_VERSION}"
+        exit 0
+        ;;
     -v)
         log_debug() {
             log "  $*"

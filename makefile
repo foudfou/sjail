@@ -4,7 +4,7 @@ all:
 install: check-root
 	install -o root -g wheel src/sjail /usr/local/bin
 	install -o root -g wheel -d /usr/local/share/sjail
-	install -o root -g wheel -m 644 src/cmd.sh src/common.sh /usr/local/share/sjail
+	install -o root -g wheel -m 644 src/cmd.sh src/common.sh src/version.sh /usr/local/share/sjail
 	install -o root -g wheel -m 644 src/sjail.conf.sample /usr/local/etc
 
 deinstall: check-root
