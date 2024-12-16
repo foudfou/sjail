@@ -48,12 +48,29 @@ output_get_word() {
 #    have a dedicated function per type.
 jail_conf_get_bool() {
     local jail=$1 param=$2
-    jail -e '|' | grep -E '^name='"${jail}"'\|' | tr '\n' '|' \
-        | awk 'BEGIN{RS="|";FS="="} /^'"${param}"'$/ {print $1}'
+    jail -e '`' | grep -E '^name='"${jail}"'`' | tr '\n' '`' \
+        | awk 'BEGIN{RS="`";FS="="} /^'"${param}"'$/ {print $1}'
 }
 
 jail_conf_get_val() {
     local jail=$1 param=$2
-    jail -e '|' | grep -E '^name='"${jail}"'\|' | tr '\n' '|' \
-        | awk 'BEGIN{RS="|";FS="="} /^'"${param}"'=/ {print $2}'
+    jail -e '`' | grep -E '^name='"${jail}"'`' | tr '\n' '`' \
+        | awk 'BEGIN{RS="`";FS="="} /^'"${param}"'=/ {print $2}'
+}
+
+jail_conf_get_ips() {
+    local jail_name=$1
+    local class=$2
+
+    local ips=""
+
+    local addr=$(jail_conf_get_val "${jail_name}" "${class}.addr" | sed 's/,/ /g')
+    local ip
+    for ip in ${addr}; do
+        ip=${ip##*|}
+        ip=${ip%%/*}
+        ips="${ips} ${ip}"
+    done
+
+    echo "${ips}"
 }

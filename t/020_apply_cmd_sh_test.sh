@@ -9,7 +9,7 @@ cleanup() {
     exit 1
 }
 
-t="apply include"
+t="apply cmd sh"
 
 sjail create j01 "${release}" >/dev/null ||suicide
 jail -c j01 >/dev/null ||suicide

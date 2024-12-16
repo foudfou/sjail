@@ -119,13 +119,11 @@ EOF
         ip6_mode="ip6 = new;"
     fi
 
-    local hooks=""
-    if [ "$(printf %.2s ${iface})" = "lo" ]; then
-        hooks="
+    # We do want nat/rdr for shared interface also.
+    local hooks="
   exec.poststart += \"${sjail} _hook_start \$name\";
   exec.prestop   += \"${sjail} _hook_stop \$name\";
 "
-    fi
 
     cat << EOF > "${jail_path}/jail.conf"
 ${jail_name} {
@@ -198,7 +196,7 @@ sjail_list() {
     local format="%-10s %-8s %-13s %15s %3s\n"
     printf "${format}" Jail Status Release
 
-    local jail_confs=$(jail -e'|' '*' | sort | cut -d'|' -f1 | cut -d= -f2) j
+    local jail_confs=$(jail -e'`' '*' | sort | cut -d'`' -f1 | cut -d= -f2) j
     local running=$(jls -N)
     local ftabs=$(grep -h -s "${zfs_mount}/releases/" ${zfs_mount}/jails/*/fstab)
     for j in ${jail_confs}; do
@@ -250,10 +248,10 @@ sjail_hook_start() {
     local jail_name="$1"
     local jail_path="${zfs_mount}/jails/${jail_name}"
 
-    local ip4=$(jail_conf_get_val "${jail_name}" ip4.addr)
-    local ip6=$(jail_conf_get_val "${jail_name}" ip6.addr)
+    local ip4s=$(jail_conf_get_ips "${jail_name}" ip4)
+    local ip6s=$(jail_conf_get_ips "${jail_name}" ip6)
     local ip
-    for ip in ${ip4} ${ip6}; do
+    for ip in ${ip4s} ${ip6s}; do
         pfctl -q -t jails -T add "${ip}"
     done
 
@@ -272,10 +270,10 @@ sjail_hook_stop() {
     local jail_name="$1"
     local jail_path="${zfs_mount}/jails/${jail_name}"
 
-    local ip4=$(jail_conf_get_val "${jail_name}" ip4.addr)
-    local ip6=$(jail_conf_get_val "${jail_name}" ip6.addr)
+    local ip4s=$(jail_conf_get_ips "${jail_name}" ip4)
+    local ip6s=$(jail_conf_get_ips "${jail_name}" ip6)
     local ip
-    for ip in ${ip4} ${ip6}; do
+    for ip in ${ip4s} ${ip6s}; do
         pfctl -q -t jails -T delete "${ip}"
     done
 
@@ -289,6 +287,7 @@ pf_rdr_add() {
 
     local ext_if=$(prop_get ${pf_ext_if} /etc/pf.conf)
 
+    # FIXME don't assume ip4.addr contains 1 single IP without CIDR
     local jail_ip4=$(jail_conf_get_val "${jail_name}" ip4.addr)
     if [ -n "$jail_ip4" ]; then
         ( pfctl -a "rdr/${jail_name}" -Psn 2> /dev/null; # previous

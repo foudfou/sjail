@@ -73,17 +73,17 @@ directory comprised of:
 
 `apply.sh` is a shell script[^2]. Commands are shell functions.
 
-|           |                                                      |
-|-----------|------------------------------------------------------|
-| `CMD`     | arguments executed inside `sh -c`                    |
-| `CONF`    | **breaking compat**: name change + no `set` argument |
-| `CP`      | copies recursively                                   |
-| `INCLUDE` |                                                      |
-| `MOUNT`   |                                                      |
-| `PKG`     |                                                      |
-| `EXPOSE`  | **breaking compat**: name change                     |
-| `SERVICE` |                                                      |
-| `SYSRC`   |                                                      |
+|           |                                                                                                 |
+|-----------|-------------------------------------------------------------------------------------------------|
+| `CMD`     | arguments executed inside `sh -c`. I.e. quote commands with redirects, logical operations, etc. |
+| `CONF`    | **breaking compat**: name change + no `set` argument                                            |
+| `CP`      | copies recursively                                                                              |
+| `INCLUDE` |                                                                                                 |
+| `MOUNT`   |                                                                                                 |
+| `PKG`     |                                                                                                 |
+| `EXPOSE`  | **breaking compat**: name change                                                                |
+| `SERVICE` |                                                                                                 |
+| `SYSRC`   |                                                                                                 |
 
 ### Compatibility with Bastille
 
