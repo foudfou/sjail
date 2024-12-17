@@ -5,15 +5,15 @@ Simple thin jail management tool.
 Provides:
 
 1. a straightforward script to create/destroy jails
-2. recipes in the form of shell scripts
+2. recipes in the form of Dockerfile-like shell scripts to customize jails
 
 ## Motivation
 
 - Easy to understand.
 - Limited rigid feature set:
   - Leverage jail(8) as much as possible;
-  - Thin jails only;
-  - Networking via cloned loopback interface or shared interface;
+  - ZFS thin jails only;
+  - Networking via shared interface or cloned loopback interface and `pf`;
 
 ## Usage
 
@@ -30,12 +30,12 @@ For loopback networking (optional):
 
 Create and review `/usr/local/etc/sjail.conf`:
 
-|               |                                                                                                  |
-|---------------|--------------------------------------------------------------------------------------------------|
-| `zfs_dataset` | pool to store all sjail data                                                                     |
-| `zfs_mount`   | mountpoint for sjail data                                                                        |
-| `interface`   | interface to attach jails to                                                                     |
-| `pf_ext_if`   | the external interface on which traffic for jails is expected (relevant for loopback networking) |
+|               |                                                                                                                            |
+|---------------|----------------------------------------------------------------------------------------------------------------------------|
+| `zfs_dataset` | pool to store all sjail data                                                                                               |
+| `zfs_mount`   | mountpoint for sjail data                                                                                                  |
+| `interface`   | interface to attach jails to. **Dictates the network setup**: `loX` for cloned loopback, anything else is shared interface |
+| `pf_ext_if`   | the external interface on which traffic for jails is expected (relevant for loopback networking)                           |
 
 
 Following commands are provided:

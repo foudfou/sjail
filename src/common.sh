@@ -72,5 +72,5 @@ jail_conf_get_ips() {
         ips="${ips} ${ip}"
     done
 
-    echo "${ips}"
+    echo "${ips# }"
 }

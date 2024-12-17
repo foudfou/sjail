@@ -19,9 +19,14 @@ jail_conf="${zfs_mount}/jails/j01/jail.conf"
 grep -q "ip4.addr = ${addr4};" ${jail_conf}
 tap_ok $? "$t: ip4.addr defined"
 
+
+cat <<EOF  >> "${zfs_mount}/jails/j01/rdr.conf"
+tcp 1234 5555
+EOF
+
 # --- Start ---
 
-jail -c j01 >/dev/null ||suicide
+jail -c j01 >/dev/null 2>&1 ||suicide
 
 pf_table=$(pfctl -q -t jails -T show)
 
@@ -31,9 +36,16 @@ for want in ${ips}; do
     tap_ok $? "$t: pf table ip4 entry added: ${want}"
 done
 
+
+rdr=$(pfctl -a "rdr/j01" -Psn 2> /dev/null)
+echo -e "${rdr}" | grep -q -E ' inet .* 1234 -> 127.0.1.1 port 5555'
+tap_ok $? "$t: rdr ip4 added"
+echo -e "${rdr}" | grep -q  ' inet6 .* 1234 -> fd10::1 port 5555'
+tap_ok $? "$t: rdr ip6 added"
+
 # --- Stop ---
 
-jail -r j01 >/dev/null ||suicide
+jail -r j01 >/dev/null 2>&1 ||suicide
 
 pf_table=$(pfctl -q -t jails -T show)
 for want in ${ips}; do
@@ -41,7 +53,13 @@ for want in ${ips}; do
     tap_ok $? "$t: pf table ip4 entry removed: ${want}"
 done
 
-# FIXME add rdr tests
+
+rdr=$(pfctl -a "rdr/j01" -Psn 2> /dev/null)
+echo -e "${rdr}" | grep -q -E ' inet .* 1234 -> 127.0.1.1 port 5555'; [ $? = 1 ]
+tap_ok $? "$t: rdr ip4 removed"
+echo -e "${rdr}" | grep -q  ' inet6 .* 1234 -> fd10::1 port 5555'; [ $? = 1 ]
+tap_ok $? "$t: rdr ip6 removed"
+
 
 sjail destroy j01 >/dev/null ||suicide
 

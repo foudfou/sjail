@@ -18,6 +18,9 @@ service netif cloneup
 sjail init
 ```
 
+Note we're intentionally focusing on the cloned loopback network setup as it's
+more involved than the shared interface.
+
 Then
 
 ```

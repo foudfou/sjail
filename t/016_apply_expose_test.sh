@@ -29,7 +29,6 @@ jail_path="${zfs_mount}/jails/j01"
 tap_ok $? "$t: rdr.conf created"
 
 rdr=$(pfctl -a "rdr/j01" -Psn 2> /dev/null)
-echo -e "${rdr}"
 echo -e "${rdr}" | grep -q -E ' inet proto tcp .* 1234 -> 10.1.1.11 port 5555'
 tap_ok $? "$t: rdr ip4 tcp"
 echo -e "${rdr}" | grep -q -E ' inet proto udp .* 1234 -> 10.1.1.11 port 5555'
