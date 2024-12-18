@@ -1,6 +1,6 @@
-# Testing
+# Unit testing
 
-Testing must be done inside an isolated environment. Easiest is to setup a
+Unit testing must be done inside an isolated environment. Easiest is to setup a
 FreeBSD vm with `vm-bhyve`.
 
 ## Usage

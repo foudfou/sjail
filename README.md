@@ -5,7 +5,7 @@ Simple thin jail management tool.
 Provides:
 
 1. a straightforward script to create/destroy jails
-2. recipes in the form of Dockerfile-like shell scripts to customize jails
+2. recipe shell scripts to customize jails
 
 ## Motivation
 
@@ -115,8 +115,16 @@ loopback interface.
 
 ### Shared interface
 
-Jails' IPs are attached to the host's external interface and thus accessible to
-the local network. No specific `pf` adaptation is required.
+Jails get IPs attached to the host's external interface and are in the same
+subnet:
+
+```
+# Provided host ip = 192.168.1.23/24 and interface="em0" in sjail.conf
+sjail create j01 14.1-RELEASE ip4=192.168.1.201/24
+```
+
+Jails are thus accessible to the local network. No specific `pf` adaptation is
+required.
 
 ### Cloned loopback
 
@@ -169,8 +177,9 @@ See [internals](./doc/internals.md).
 
 ## Contributing
 
-All feedback and PRs welcome. When hacking on the code, make sure to run tests
-in an isolated environment.
+Feedback and PRs welcome. When hacking on the code, make sure to run tests in
+isolated environments (See [t/README.md](./t/README.md) and
+[t/integration/README.md](./t/integration/README.md)).
 
 ## Credits
 
