@@ -11,12 +11,12 @@ cleanup() {
     exit 1
 }
 
-t="networking shared interface"
+t="networking cloned loopback"
 
 conf='zfs_dataset="zroot/sjail"
 zfs_mount="/sjail"
-interface="vtnet0"
-pf_ext_if=""'
+interface="lo1"
+pf_ext_if="ext_if"'
 
 pf='ext_if=vtnet0
 icmp_types  = "{ echoreq, unreach }"
@@ -39,31 +39,35 @@ antispoof for $ext_if
 pass inet proto icmp icmp-type $icmp_types
 pass inet6 proto icmp6 icmp6-type $icmp6_types
 
-# Allow local network
-pass from $ext_if:network to any keep state
-
 # Allow ssh
 pass in inet proto tcp from any to any port ssh flags S/SA keep state'
 
-install_sjail "${vm1}" "${conf}" "${pf}"
-install_sjail "${vm2}" "${conf}" "${pf}"
+for vm in $vm1 $vm2; do
+    install_sjail "${vm}" "${conf}" "${pf}"
+
+    ssh root@"${vm}" 'sysrc cloned_interfaces+="lo1" && service netif cloneup'
+done
+
 
 ssh root@"${vm1}" sjail create j01 "${release}" ip4="${jail1}"/24
+
+echo "tcp 1234 5555" | ssh root@"${vm1}" -T "cat > /sjail/jails/j01/rdr.conf"
+
 ssh root@"${vm1}" jail -c j01
+
 
 out1=$(mktemp sjail-test.XXXXXX)
 ssh root@"${vm1}" "timeout 3 jexec -l j01 nc -v -l 5555" >$out1 2>&1 &
 pid=$!
 sleep .5
 out2=$(mktemp sjail-test.XXXXXX)
-ssh root@"${vm2}" nc -v -w 2 -z "${jail1}" 5555 >$out2 2>&1
+ssh root@"${vm2}" nc -v -w 2 -z "${vm1}" 1234 >$out2 2>&1
 wait $pid
 
-grep -qE "Connection from ${vm2} .* received!" $out1
+grep -q "Connection from ${vm2} .* received!" $out1
 tap_ok $? "$t: connection received"
-grep -qE "Connection to ${jail1} 5555 port \[tcp/personal-agent\] succeeded!" $out2
+grep -q "Connection to ${vm1} 1234 port \[tcp/\*\] succeeded!" $out2
 tap_ok $? "$t: connection succeded"
-
 
 
 rm sjail-test.*
