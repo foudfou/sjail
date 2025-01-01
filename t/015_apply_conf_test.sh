@@ -30,19 +30,19 @@ tap_ok $? "$t: jail restarted"
 
 # grep jail.conf
 . /usr/local/share/sjail/common.sh
-param=$(jail_conf_get_val j01 sysvshm)
+param=$(jail_conf j01 | jail_conf_get_val sysvshm)
 tap_cmp "${param}" new "$t: get_val - sysvshm"
 
-param=$(jail_conf_get_val j01 allow.mlock)
+param=$(jail_conf j01 | jail_conf_get_val allow.mlock)
 tap_cmp "${param}" 1 "$t: get_val - allow.mlock"
 
-param=$(jail_conf_get_bool j01 mount.devfs)
+param=$(jail_conf j01 | jail_conf_get_bool mount.devfs)
 tap_cmp "${param}" "mount.devfs" "$t: get_bool mount.devfs"
 
-param=$(jail_conf_get_bool j01 allow.set_hostname)
+param=$(jail_conf j01 | jail_conf_get_bool allow.set_hostname)
 tap_cmp "${param}" "allow.set_hostname" "$t: get_bool allow.set_hostname"
 
-param=$(jail_conf_get_bool j01 allow.mount.zfs)
+param=$(jail_conf j01 | jail_conf_get_bool allow.mount.zfs)
 tap_cmp "${param}" "" "$t: unset"
 
 

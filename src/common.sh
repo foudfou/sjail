@@ -2,6 +2,8 @@
 
 HLINE="────"
 
+JAIL_CONF_DELIM='`'
+
 log_fatal() {
     >&2 echo "Error: $1"
     exit 1
@@ -28,10 +30,6 @@ arg_get() {
     echo "$@" | awk 'BEGIN{RS=" ";FS="="} /^'${opt}'=/ {print $2}'
 }
 
-output_get_word() {
-    echo -e "$1" | grep -w "$2" || true
-}
-
 # Note a function can return 2 arguments, but they have to be read with:
 # read k v <<EOF
 # $(jail_conf_get j01 sysvshm)
@@ -46,16 +44,23 @@ output_get_word() {
 #
 # 3. the jail.conf format spec is really hairy. It's thus more convenient to
 #    have a dedicated function per type.
+jail_conf() {
+    local jail=$1
+    jail -e "${JAIL_CONF_DELIM}" | grep -E '^name='"${jail}""${JAIL_CONF_DELIM}"
+}
+
 jail_conf_get_bool() {
-    local jail=$1 param=$2
-    jail -e '`' | grep -E '^name='"${jail}"'`' | tr '\n' '`' \
-        | awk 'BEGIN{RS="`";FS="="} /^'"${param}"'$/ {print $1}'
+    local param=$1
+    read conf
+    echo -n "${conf}" | tr '\n' "${JAIL_CONF_DELIM}" \
+        | awk 'BEGIN{RS="'"${JAIL_CONF_DELIM}"'";FS="="} /^'"${param}"'$/ {print $1}'
 }
 
 jail_conf_get_val() {
-    local jail=$1 param=$2
-    jail -e '`' | grep -E '^name='"${jail}"'`' | tr '\n' '`' \
-        | awk 'BEGIN{RS="`";FS="="} /^'"${param}"'=/ {print $2}'
+    local param=$1
+    read conf
+    echo -n "${conf}" | tr '\n' "${JAIL_CONF_DELIM}" \
+        | awk 'BEGIN{RS="'"${JAIL_CONF_DELIM}"'";FS="="} /^'"${param}"'=/ {print $2}'
 }
 
 jail_conf_get_ips() {
@@ -64,7 +69,7 @@ jail_conf_get_ips() {
 
     local ips=""
 
-    local addr=$(jail_conf_get_val "${jail_name}" "${class}.addr" | sed 's/,/ /g')
+    local addr=$(jail_conf "${jail_name}" | jail_conf_get_val "${class}.addr" | sed 's/,/ /g')
     local ip
     for ip in ${addr}; do
         ip=${ip##*|}

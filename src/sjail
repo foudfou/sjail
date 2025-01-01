@@ -192,26 +192,29 @@ sjail_destroy() {
 }
 
 sjail_list() {
-    local format="%-10s %-8s %-13s %15s %3s\n"
-    printf "${format}" Jail Status Release
+    local format="%-10s %-8s %-13s %-15s %3s\n"
+    printf "${format}" Name Status Release Path
 
-    local jail_confs=$(jail -e'`' '*' | sort | cut -d'`' -f1 | cut -d= -f2) j
-    local running=$(jls -N)
+    local running=$(jls -N | tail -n +2 | cut -d' ' -f2)
     local ftabs=$(grep -h -s "${zfs_mount}/releases/" ${zfs_mount}/jails/*/fstab)
-    for j in ${jail_confs}; do
-        local status=$(output_get_word "${running}" "${j}")
+    local conf
+    jail -e'`' | sort | while read conf; do
+        local jail=$(echo "${conf}" | jail_conf_get_val name)
+        local status=$(echo "${running}" | grep -w "${jail}")
         if [ -n "${status}" ]; then
             status=Up
         else
             status=Down
         fi
 
-        local release=$(echo -e "${ftabs}" | awk -F'/' '/\/'"${j}"'\//{print$4}')
+        local release=$(echo -e "${ftabs}" | awk -F'/' '/\/'"${jail}"'\//{print$4}')
         if [ -z "${release}" ]; then
             release=-
         fi
 
-        printf "${format}" ${j} ${status} ${release}
+        local path=$(echo "${conf}" | jail_conf_get_val path)
+
+        printf "${format}" ${jail} ${status} ${release} ${path}
     done
 }
 

@@ -3,7 +3,7 @@
 
 cleanup() {
     rm -f /etc/jail.sjail_unmanaged.conf
-    for j in ${jails}; do
+    for j in ${jails} mail smail; do
         jail -r "${j}" >/dev/null ||true
         zfs destroy "${zfs_dataset}/jails/${j}" || true
     done
@@ -53,11 +53,28 @@ for j in ${jails}; do
 done
 
 
-
 rm -f /etc/jail.sjail_unmanaged.conf
 for j in ${jails}; do
     jail -r "${j}" >/dev/null ||suicide
     zfs destroy "${zfs_dataset}/jails/${j}" ||suicide
 done
+
+# --- Dup / Similar name ---
+
+sjail create mail "${release}" >/dev/null ||suicide
+sjail create smail "${release}" >/dev/null ||suicide
+
+jail -c smail >/dev/null ||suicide
+
+list=$(sjail list)
+echo -e "${list}" | grep -qE "^mail\s+Down\s+${release}\s+${zfs_mount}/jails/mail/root\b"
+tap_ok $? "$t: similar names: jail mail listed"
+echo -e "${list}" | grep -qE "^smail\s+Up\s+${release}\s+${zfs_mount}/jails/smail/root\b"
+tap_ok $? "$t: similar names: jail smail listed"
+
+jail -r smail >/dev/null ||suicide
+zfs destroy "${zfs_dataset}/jails/mail" ||suicide
+zfs destroy "${zfs_dataset}/jails/smail" ||suicide
+
 
 tap_end
