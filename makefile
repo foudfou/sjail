@@ -1,3 +1,5 @@
+.POSIX:
+
 all:
 
 # We might want to package this at some point
@@ -12,10 +14,10 @@ deinstall: check-root
 	rm -fr /usr/local/share/sjail
 
 check-root:
-.if $(.MAKE.UID) != 0
-	@echo "Error: you must be root to perform this action."
-	@false
-.endif
+	@if [ $$(id -u) -ne 0 ]; then \
+echo "Error: you must be root to perform this action."; \
+false; \
+fi
 
 ls-install:
 	ls -l /usr/local/bin/sjail /usr/local/share/sjail/* /usr/local/etc/sjail.conf.sample
@@ -29,6 +31,20 @@ lint:
 	shellcheck $(SHELLCHECK_OPTS) src/sjail
 	shellcheck $(SHELLCHECK_OPTS) -x src/sjail src/cmd.sh src/common.sh
 
-.PHONY: test
-test:
+.PHONY: test-unit
+test-unit:
 	prove t/*_test.sh
+
+.PHONY: test-integration
+test-integration:
+	prove t/integration/*_test.sh
+
+# Could also use git-vsn
+SJAIL_VERSION = $(shell git describe --tags)
+
+.PHONY: package
+package:
+	@archive="sjail-$(SJAIL_VERSION).tar.xz"; \
+sed -i -e 's/SJAIL_VERSION=.*/SJAIL_VERSION="'"$(SJAIL_VERSION)"'"/' src/version.sh; \
+( git archive HEAD | xz > "$${archive}" ); \
+printf "Created %s\n" "$${archive}"
