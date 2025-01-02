@@ -73,23 +73,24 @@ directory comprised of:
 
 `apply.sh` is a shell script[^2]. Commands are shell functions.
 
-|           |                                                                                                 |
+| Command   | Comments                                                                                        |
 |-----------|-------------------------------------------------------------------------------------------------|
 | `CMD`     | arguments executed inside `sh -c`. I.e. quote commands with redirects, logical operations, etc. |
-| `CONF`    | **breaking compat**: name change + no `set` argument                                            |
+| `CONF`    | **breaking compat**: name change + no `set` argument.                                           |
 | `CP`      | copies recursively                                                                              |
 | `INCLUDE` |                                                                                                 |
 | `MOUNT`   |                                                                                                 |
 | `PKG`     |                                                                                                 |
 | `EXPOSE`  | **breaking compat**: name change                                                                |
+| `RESTART` | convenient in conjunction with `CONF`                                                           |
 | `SERVICE` |                                                                                                 |
 | `SYSRC`   |                                                                                                 |
 
 ### Compatibility with Bastille
 
-When migrating template/recipes from Bastille, here's a little checklist:
+When migrating from Bastille templates, here's a little checklist:
 
-- command names; see **breaking compat** in the previous table
+- Command names; see **breaking compat** in the previous table
 - `ARG` is replaced with the `sh` equivalent:
   ```diff
   -ARG php_prefix=php82
@@ -100,6 +101,10 @@ When migrating template/recipes from Bastille, here's a little checklist:
   -INCLUDE my/service-php --arg php_prefix=php82
   +INCLUDE my/service-php php_prefix=php82
   ```
+  - Make sure to escape spaces in strings:
+    ```
+    INCLUDE foudfou/service-nodejs npm_global="pm2\ pnpm" # otherwise interpreted as npm_global=pm2
+    ```
 
 Optional arguments must still be defined:
 

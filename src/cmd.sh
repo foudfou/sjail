@@ -122,6 +122,13 @@ PKG() {
     jexec -l "${jail_name}" pkg install -y "$@"
 }
 
+# Convenience function for when CONF is not at the end of the recipe. Ex:
+# postgresql recipe. Probably best to hide internals, like sjail variables,
+# from user.
+RESTART() {
+    jail -rc "${jail_name}"
+}
+
 SERVICE() {
     log_cmd "SERVICE $@"
     jexec -l "${jail_name}" service "$@"
