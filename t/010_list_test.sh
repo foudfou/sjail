@@ -59,18 +59,22 @@ for j in ${jails}; do
     zfs destroy "${zfs_dataset}/jails/${j}" ||suicide
 done
 
-# --- Dup / Similar name ---
+# --- Dup, similar name/hostname ---
 
 sjail create mail "${release}" >/dev/null ||suicide
 sjail create smail "${release}" >/dev/null ||suicide
+
+# Bug prior 2acad86 where jail name `mail` would match against `smail`'s
+# hostname `mail.foo.com` in jls, thus wrongly displaying jail `mail` as Up.
+sed -ie 's/\}/host.hostname = "mail.foo.com";\n}/' "${zfs_mount}/jails/smail/jail.conf"
 
 jail -c smail >/dev/null ||suicide
 
 list=$(sjail list)
 echo -e "${list}" | grep -qE "^mail\s+Down\s+${release}\s+${zfs_mount}/jails/mail/root\b"
-tap_ok $? "$t: similar names: jail mail listed"
+tap_ok $? "$t: similar names: jail mail down"
 echo -e "${list}" | grep -qE "^smail\s+Up\s+${release}\s+${zfs_mount}/jails/smail/root\b"
-tap_ok $? "$t: similar names: jail smail listed"
+tap_ok $? "$t: similar names: jail smail up"
 
 jail -r smail >/dev/null ||suicide
 zfs destroy "${zfs_dataset}/jails/mail" ||suicide

@@ -39,7 +39,7 @@ test-unit:
 test-integration:
 	prove t/integration/*_test.sh
 
-# Could also use git-vsn
+# Could also use `git-vsn -t v`
 SJAIL_VERSION = $(shell git describe --tags)
 
 .PHONY: package
