@@ -3,7 +3,7 @@
 #
 # Global test variables
 #
-release="14.1-RELEASE"
+release="14.2-RELEASE"
 
 # Fresh FreeBSD installs.
 vm1=192.168.1.202

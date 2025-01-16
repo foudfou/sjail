@@ -22,4 +22,6 @@ suicide() { # intended for non-test commands
 #
 # Global test variables
 #
-release="14.1-RELEASE"
+
+# Make sure this is consistent with the guest system
+release="14.2-RELEASE"

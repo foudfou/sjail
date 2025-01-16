@@ -32,7 +32,7 @@ Create and review `/usr/local/etc/sjail.conf`:
 
 |               |                                                                                                                            |
 |---------------|----------------------------------------------------------------------------------------------------------------------------|
-| `zfs_dataset` | pool to store all sjail data                                                                                               |
+| `zfs_dataset` | pool to store all sjail data (will be created by `sjail init`)                                                                                               |
 | `zfs_mount`   | mountpoint for sjail data                                                                                                  |
 | `interface`   | interface to attach jails to. **Dictates the network setup**: `loX` for cloned loopback, anything else is shared interface |
 | `pf_ext_if`   | the external interface on which traffic for jails is expected (relevant for loopback networking)                           |
@@ -43,10 +43,10 @@ Following commands are provided:
 |                 |                                                                         |
 |-----------------|-------------------------------------------------------------------------|
 | Init            | `sjail init`                                                            |
-| Create release  | `sjail rel-create 14.1-RELEASE`                                         |
-| Update release  | `sjail rel-update 14.1-RELEASE`                                         |
-| Destroy release | `sjail rel-destroy 14.1-RELEASE`                                        |
-| Create jail     | `sjail create alcatraz 14.1-RELEASE ip4=10.1.1.11 ip6=fd10:0:0:100::11` |
+| Create release  | `sjail rel-create 14.2-RELEASE`                                         |
+| Update release  | `sjail rel-update 14.2-RELEASE`                                         |
+| Destroy release | `sjail rel-destroy 14.2-RELEASE`                                        |
+| Create jail     | `sjail create alcatraz 14.2-RELEASE ip4=10.1.1.11 ip6=fd10:0:0:100::11` |
 | Destroy jail    | `sjail destroy alcatraz`                                                |
 | List            | `jls` or `sjail list` for all                                           |
 | Start           | `jail -c alcatraz`                                                      |
@@ -125,7 +125,7 @@ subnet:
 
 ```
 # Provided host ip = 192.168.1.23/24 and interface="em0" in sjail.conf
-sjail create j01 14.1-RELEASE ip4=192.168.1.201/24
+sjail create j01 14.2-RELEASE ip4=192.168.1.201/24
 ```
 
 Jails are thus accessible to the local network. No specific `pf` adaptation is
