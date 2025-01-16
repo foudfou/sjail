@@ -40,18 +40,18 @@ Create and review `/usr/local/etc/sjail.conf`:
 
 Following commands are provided:
 
-|                 |                                                                         |
-|-----------------|-------------------------------------------------------------------------|
-| Init            | `sjail init`                                                            |
-| Create release  | `sjail rel-create 14.2-RELEASE`                                         |
-| Update release  | `sjail rel-update 14.2-RELEASE`                                         |
-| Destroy release | `sjail rel-destroy 14.2-RELEASE`                                        |
-| Create jail     | `sjail create alcatraz 14.2-RELEASE ip4=10.1.1.11 ip6=fd10:0:0:100::11` |
-| Destroy jail    | `sjail destroy alcatraz`                                                |
-| List            | `jls` or `sjail list` for all                                           |
-| Start           | `jail -c alcatraz`                                                      |
-| Stop            | `jail -r alcatraz`                                                      |
-| Recipe          | `sjail apply alcatraz some/recipe`                                      |
+|                 |                                                                                        |
+|-----------------|----------------------------------------------------------------------------------------|
+| Init            | `sjail init`                                                                           |
+| Create release  | `sjail rel-create 14.2-RELEASE`                                                        |
+| Update release  | `sjail rel-update 14.2-RELEASE`                                                        |
+| Destroy release | `sjail rel-destroy 14.2-RELEASE`                                                       |
+| Create jail     | `sjail create alcatraz 14.2-RELEASE ip4=10.1.1.11 ip6=fd10:0:0:100::11 nat=1 rdr=0` |
+| Destroy jail    | `sjail destroy alcatraz`                                                               |
+| List            | `jls` or `sjail list` for all                                                          |
+| Start           | `jail -c alcatraz`                                                                     |
+| Stop            | `jail -r alcatraz`                                                                     |
+| Recipe          | `sjail apply alcatraz some/recipe`                                                     |
 
 Compose your own:
 
@@ -118,7 +118,12 @@ maxmemory_policy=${maxmemory_policy:-}
 Sjail only supports these networking setups: shared interface or cloned
 loopback interface.
 
+The network setup is determined by the `interface` parameter in `sjail.conf`.
+
 ### Shared interface
+
+When the `interface` parameter doesn't start with `lo`, it's interpreted as
+external interface.
 
 Jails get IPs attached to the host's external interface and are in the same
 subnet:
@@ -132,6 +137,9 @@ Jails are thus accessible to the local network. No specific `pf` adaptation is
 required.
 
 ### Cloned loopback
+
+When the `interface` parameter starts with `lo`, it's interpreted as a cloned
+loopback interface.
 
 Jails' IPs are attached to a clone loopback interface. Traffic between host and
 jails is enabled with `pf`: outgoing via NAT, incoming via RDR.
@@ -167,6 +175,28 @@ Port forwarding is persisted to `${jail_path}/rdr.conf` as lines of the format
 via `pf` rdr rules on jail start and cleared on jail stop.
 
 `rdr.conf` can be created manually of via the recipe `EXPOSE` command.
+
+### Custom
+
+Networking can be fine-tuned and NAT or RDR can be enabled individually,
+respectively with the `nat=[0|1|]` and `rdr=[0|1|]` parameters.
+
+These parameters are persisted to `${jail_path}/meta.conf`.
+
+For example, we can enable NAT for outgoing traffic but disable RDR for
+incoming traffic:
+
+`sjail create j01 14.2-RELEASE ip4=192.168.1.201/24 nat=1 rdr=0`
+
+One use case for this is a host with a VPN that forwards default traffic to the
+VPN server, and jails that:
+
+- are exposed to local network
+- can reach out to the internet (ex: pkg install)
+- but don't expose ports to the VPN network (`pf_ext_if=vpn_cli_if`)
+
+A solution to these requirements is a *shared interface* setup and only
+enabling NAT for jails.
 
 ## Upgrade
 

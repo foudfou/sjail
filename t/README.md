@@ -5,18 +5,87 @@ FreeBSD vm with `vm-bhyve`.
 
 ## Usage
 
+### Create vm
+
+See [quick start instructions](https://github.com/churchers/vm-bhyve/) to setup
+vm-bhyve, then:
+
 ```
-cat <<EOF > /usr/local/etc/sjail.conf
-zfs_dataset="zroot/sjail"
-zfs_mount="/jails"
-interface="lo1"
-pf_ext_if="ext_if"
+pkg install qemu-tools
+vm img https://download.freebsd.org/releases/VM-IMAGES/14.2-RELEASE/amd64/Latest/FreeBSD-14.2-RELEASE-amd64-zfs.raw.xz
+vm create -t freebsd-zvol -i FreeBSD-14.2-RELEASE-amd64-zfs.raw sjail-test
+vm start sjail-test
+vm console sjail-test # login: root no password
+
+# in the console
+passwd
+
+cat <<EOF > /etc/rc.conf
+hostname="sjail-test"
+ifconfig_vtnet0="inet 192.168.1.201 netmask 255.255.255.0"
+defaultrouter="192.168.1.1"
+sshd_enable="YES"
+zfs_enable="YES"
+pf_enable="YES"
+cloned_interfaces="lo1"
 EOF
+
+sed -i -e 's/^#PermitRootLogin .*/PermitRootLogin yes/' /etc/ssh/sshd_config
+service sshd restart
+
+mkdir /root/.ssh
+chmod 755 /root/.ssh
+echo "YOUR_SSH_PUB_KEY" > /root/.ssh/authorized_keys
+chmod 600 /root/.ssh/authorized_keys
+
+mkdir -p /usr/local/etc
+cat <<EOF >/usr/local/etc/sjail.conf
+zfs_dataset="zroot/sjail"
+zfs_mount="/sjail"
+interface="vtnet0"
+pf_ext_if=""
+EOF
+
+cat <<EOF >/etc/pf.conf
+ext_if=vtnet0
+icmp_types  = "{ echoreq, unreach }"
+icmp6_types = "{ echoreq, unreach, routeradv, neighbrsol, neighbradv }"
+
+# sjail-managed
+table <jails> persist
+
+set skip on lo
+
+# actually not used
+rdr-anchor "rdr/*"
+
+nat on \$ext_if from <jails> to any -> (\$ext_if:0)
+
+block in all
+pass out all keep state
+antispoof for \$ext_if
+
+pass inet proto icmp icmp-type \$icmp_types
+pass inet6 proto icmp6 icmp6-type \$icmp6_types
+
+# Allow ssh
+pass in inet proto tcp from any to any port ssh flags S/SA keep state
+EOF
+
+pkg install perl5
+
+~ CTRL-D
+
+mkdir sjail
+# copy sjail code over to sjail/
 make install
-sysrc cloned_interfaces+="lo1"
-service netif cloneup
 sjail init
+
+# back on host
+vm snapshot sjail-test
 ```
+
+### Run tests
 
 Note we're intentionally focusing on the cloned loopback network setup as it's
 more involved than the shared interface.

@@ -24,8 +24,8 @@ sjail_init() {
     # recipes arbitrarily in sjail pool
     zfs create -p "${zfs_dataset}/recipes"
 
-    if ! grep -q '.include "'${zfs_mount}/jails /etc/jail.conf; then
-        cat <<EOF > /etc/jail.conf
+    if ! grep -q '.include "'${zfs_mount}/jails /etc/jail.conf 2> /dev/null; then
+        cat <<EOF >> /etc/jail.conf
 .include "${zfs_mount}/jails/*/jail.conf";
 EOF
     fi
@@ -96,6 +96,8 @@ sjail_create() {
     local version="$1"; shift
     local ip4=$(arg_get ip4 "$@")
     local ip6=$(arg_get ip6 "$@")
+    local nat=$(arg_get nat "$@")
+    local rdr=$(arg_get rdr "$@")
     log "Creating thin jail: $jail_name"
 
     zfs create -p "${zfs_dataset}/jails/${jail_name}"
@@ -116,21 +118,29 @@ EOF
         ip6_mode="ip6 = new;"
     fi
 
-    local hooks=""
+    # Cloned loopback network setup
     if [ "$(printf %.2s ${interface})" = "lo" ]; then
-        hooks="
+        nat=${nat:-1}
+        rdr=${rdr:-1}
+    fi
+    # TODO use jail metadata when they're available
+    # https://people.freebsd.org/~dch/posts/2025-01-12-jail-metadata/
+    echo jail_meta_nat="${nat}" >> "${jail_path}/meta.conf"
+    echo jail_meta_rdr="${rdr}" >> "${jail_path}/meta.conf"
+
+    local hooks="
   exec.poststart += \"${sjail} _hook_start \$name\";
   exec.prestop   += \"${sjail} _hook_stop \$name\";
 "
-    fi
 
+    local jail_path_in_conf="${zfs_mount}/jails/\$name"
     cat << EOF > "${jail_path}/jail.conf"
 ${jail_name} {
-  host.hostname = ${jail_name};
-  path = ${jail_path}/root;
+  host.hostname = \$name;
+  path = ${jail_path_in_conf}/root;
 
   exec.clean;
-  exec.consolelog = ${jail_path}/console.log;
+  exec.consolelog = ${jail_path_in_conf}/console.log;
   exec.start = '/bin/sh /etc/rc';
   exec.stop = '/bin/sh /etc/rc.shutdown';
   exec.prestart  += "cp /etc/resolv.conf \$path/etc/resolv.conf";
@@ -140,7 +150,7 @@ ${jail_name} {
   exec.poststop  += "rm \$path/etc/localtime";
 
   mount.devfs;
-  mount.fstab = ${jail_path}/fstab;
+  mount.fstab = ${jail_path_in_conf}/fstab;
   enforce_statfs = 2;
   devfs_ruleset = 4;
 
@@ -250,14 +260,18 @@ sjail_hook_start() {
     local jail_name="$1"
     local jail_path="${zfs_mount}/jails/${jail_name}"
 
-    local ip4s=$(jail_conf_get_ips "${jail_name}" ip4)
-    local ip6s=$(jail_conf_get_ips "${jail_name}" ip6)
-    local ip
-    for ip in ${ip4s} ${ip6s}; do
-        pfctl -q -t jails -T add "${ip}"
-    done
+    . "${jail_path}/meta.conf"
 
-    if [ -e "${jail_path}/rdr.conf" ]; then
+    if [ "${jail_meta_nat}" = "1" ]; then
+        local ip4s=$(jail_conf_get_ips "${jail_name}" ip4)
+        local ip6s=$(jail_conf_get_ips "${jail_name}" ip6)
+        local ip
+        for ip in ${ip4s} ${ip6s}; do
+            pfctl -q -t jails -T add "${ip}"
+        done
+    fi
+
+    if [ "${jail_meta_rdr}" = "1" -a -s "${jail_path}/rdr.conf" ]; then
         while read line; do
             line=$(echo "${line}") # trim
             [ ${#line} -eq 0 -o \
@@ -272,14 +286,18 @@ sjail_hook_stop() {
     local jail_name="$1"
     local jail_path="${zfs_mount}/jails/${jail_name}"
 
-    local ip4s=$(jail_conf_get_ips "${jail_name}" ip4)
-    local ip6s=$(jail_conf_get_ips "${jail_name}" ip6)
-    local ip
-    for ip in ${ip4s} ${ip6s}; do
-        pfctl -q -t jails -T delete "${ip}"
-    done
+    . "${jail_path}/meta.conf"
 
-    if [ -e "${jail_path}/rdr.conf" ]; then
+    if [ "${jail_meta_nat}" = "1" ]; then
+        local ip4s=$(jail_conf_get_ips "${jail_name}" ip4)
+        local ip6s=$(jail_conf_get_ips "${jail_name}" ip6)
+        local ip
+        for ip in ${ip4s} ${ip6s}; do
+            pfctl -q -t jails -T delete "${ip}"
+        done
+    fi
+
+    if [ "${jail_meta_rdr}" = "1" ]; then
         pf_rdr_clear "${jail_name}"
     fi
 }
