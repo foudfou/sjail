@@ -39,12 +39,17 @@ test-unit:
 test-integration:
 	prove t/integration/*_test.sh
 
-# Could also use `git-vsn -t v`
-SJAIL_VERSION = $(shell git describe --tags)
-
+# Could also use `git-vsn -t v`. Note the POSIX makefile variable assignment
+# from a shell output is `!=`; but git might not be needed in all
+# cases/targets, so we only use it where needed.
 .PHONY: package
 package:
-	@archive="sjail-$(SJAIL_VERSION).tar.xz"; \
-sed -i -e 's/SJAIL_VERSION=.*/SJAIL_VERSION="'"$(SJAIL_VERSION)"'"/' src/version.sh; \
+	@version=$$(git describe --tags | sed -e 's/^v//; s/-[[:digit:]]\+-g/+/'); \
+archive="sjail-$${version}.tar.xz"; \
+sed -i -e 's/SJAIL_VERSION=.*/SJAIL_VERSION="'"$${version}"'"/' src/version.sh; \
 ( git archive HEAD | xz > "$${archive}" ); \
 printf "Created %s\n" "$${archive}"
+
+.PHONY: clean
+clean:
+	rm sjail-*.tar.xz
