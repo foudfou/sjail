@@ -351,6 +351,7 @@ Commands:
     rel-destroy  Destroy base image. Args: version
     rel-update   Apply freebsd-update on base image with version.
                  Can be done anytime. Args: version
+    version      Show version.
 EOF
 }
 
