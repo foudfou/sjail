@@ -47,7 +47,7 @@ sjail_release_create() {
 
     zfs create -p "${zfs_dataset}/releases/${version}"
 
-    if [ -n "${nofetch}" ]; then
+    if [ -z "${nofetch}" ]; then
         fetch "${freebsd_url}/${version}/MANIFEST" -o /tmp/MANIFEST
     fi
 
@@ -55,7 +55,7 @@ sjail_release_create() {
     for a in ${release_archives}; do
         local archive="${a}.txz"
 
-        if [ -n "${nofetch}" ]; then
+        if [ -z "${nofetch}" ]; then
             rm -f /tmp/${archive} || true
             fetch "${freebsd_url}/${version}/${archive}" -o /tmp/${archive}
         fi
