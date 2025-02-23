@@ -341,13 +341,13 @@ Options:
 
 Commands:
     apply        Apply recipe on jail. Args: name recipe
-    create       Create thin jail from base image. Args: name version
-                 [ip4 ip6]
+    create       Create thin jail from base image. Args: name version.
+                 Opts: ip4, ip6, nat, rdr
     destroy      Destroy thin jail. Args: name
     init         Setup zpool, sysrc, networking.
     list         List status of all jails.
     rel-create   Fetch and create base image. Args: version
-                 (e.g. 14.1-RELEASE). Opts: nofetch=1 skips download.
+                 (e.g. 14.2-RELEASE). Opts: nofetch=1 skips download.
     rel-destroy  Destroy base image. Args: version
     rel-update   Apply freebsd-update on base image with version.
                  Can be done anytime. Args: version

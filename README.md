@@ -5,7 +5,7 @@ Simple thin jail management tool.
 Provides:
 
 1. a straightforward script to create/destroy jails
-2. recipe shell scripts to customize jails
+2. recipe scripts to customize jails, heavily inspired by [Bastille](https://github.com/BastilleBSD/bastille)
 
 ## Motivation
 
@@ -40,18 +40,18 @@ Create and review `/usr/local/etc/sjail.conf`:
 
 Following commands are provided:
 
-|                 |                                                                                        |
-|-----------------|----------------------------------------------------------------------------------------|
-| Init            | `sjail init`                                                                           |
-| Create release  | `sjail rel-create 14.2-RELEASE`                                                        |
-| Update release  | `sjail rel-update 14.2-RELEASE`                                                        |
-| Destroy release | `sjail rel-destroy 14.2-RELEASE`                                                       |
+|                 |                                                                                     |
+|-----------------|-------------------------------------------------------------------------------------|
+| Init            | `sjail init`                                                                        |
+| Create release  | `sjail rel-create 14.2-RELEASE`                                                     |
+| Update release  | `sjail rel-update 14.2-RELEASE`                                                     |
+| Destroy release | `sjail rel-destroy 14.2-RELEASE`                                                    |
 | Create jail     | `sjail create alcatraz 14.2-RELEASE ip4=10.1.1.11 ip6=fd10:0:0:100::11 nat=1 rdr=0` |
-| Destroy jail    | `sjail destroy alcatraz`                                                               |
-| List            | `jls` or `sjail list` for all                                                          |
-| Start           | `jail -c alcatraz`                                                                     |
-| Stop            | `jail -r alcatraz`                                                                     |
-| Recipe          | `sjail apply alcatraz some/recipe`                                                     |
+| Destroy jail    | `sjail destroy alcatraz`                                                            |
+| List            | `jls` or `sjail list` for all                                                       |
+| Start           | `jail -c alcatraz`                                                                  |
+| Stop            | `jail -r alcatraz`                                                                  |
+| Recipe          | `sjail apply alcatraz some/recipe`                                                  |
 
 Compose your own:
 
