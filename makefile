@@ -6,8 +6,10 @@ all:
 install: check-root
 	install -o root -g wheel src/sjail /usr/local/bin
 	install -o root -g wheel -d /usr/local/share/sjail
-	install -o root -g wheel -m 644 src/cmd.sh src/common.sh src/version.sh /usr/local/share/sjail
+	install -o root -g wheel -m 644 src/recipe.sh src/common.sh src/version.sh /usr/local/share/sjail
 	install -o root -g wheel -m 644 src/sjail.conf.sample /usr/local/etc
+	@## cleanup
+	rm -f /usr/local/share/sjail/cmd.sh
 
 deinstall: check-root
 	rm /usr/local/bin/sjail
@@ -29,7 +31,7 @@ SHELLCHECK_OPTS = -e SC3037,SC3043
 .PHONY: lint
 lint:
 	shellcheck $(SHELLCHECK_OPTS) src/sjail
-	shellcheck $(SHELLCHECK_OPTS) -x src/sjail src/cmd.sh src/common.sh
+	shellcheck $(SHELLCHECK_OPTS) -x src/sjail src/recipe.sh src/common.sh
 
 .PHONY: test-unit
 test-unit:

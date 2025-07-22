@@ -228,6 +228,14 @@ sjail_list() {
     done
 }
 
+# Convenience command
+sjail_pkg_upgrade_all() {
+    for j in $(jls -n name | sed -e 's/name=//'); do
+        echo "==== $j ===="
+        jexec $j pkg upgrade -y
+    done
+}
+
 sjail_apply() {
     local jail_name="$1"
     local recipe_name="$2"
@@ -244,7 +252,7 @@ sjail_apply() {
         log_fatal "recipe not found: ${recipe_path}"
     fi
 
-    . /usr/local/share/sjail/cmd.sh
+    . /usr/local/share/sjail/recipe.sh
     local needs_restart=0
     . "${recipe_path}"
 
@@ -351,6 +359,7 @@ Commands:
     rel-destroy  Destroy base image. Args: version
     rel-update   Apply freebsd-update on base image with version.
                  Can be done anytime. Args: version
+    pkg-upgrade  Unattended upgrade of packages in all running jails.
     version      Show version.
 EOF
 }
@@ -405,6 +414,9 @@ case $command in
     list)
         sjail_list
         ;;
+    pkg-upgrade)
+        sjail_pkg_upgrade_all
+    ;;
     apply)
         sjail_apply "$@"
         ;;
