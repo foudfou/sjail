@@ -32,7 +32,7 @@ Create and review `/usr/local/etc/sjail.conf`:
 
 |               |                                                                                                                            |
 |---------------|----------------------------------------------------------------------------------------------------------------------------|
-| `zfs_dataset` | pool to store all sjail data (will be created by `sjail init`)                                                                                               |
+| `zfs_dataset` | pool to store all sjail data (will be created by `sjail init`)                                                             |
 | `zfs_mount`   | mountpoint for sjail data                                                                                                  |
 | `interface`   | interface to attach jails to. **Dictates the network setup**: `loX` for cloned loopback, anything else is shared interface |
 | `pf_ext_if`   | the external interface on which traffic for jails is expected (relevant for loopback networking)                           |
@@ -55,11 +55,11 @@ Following commands are provided:
 
 Compose your own:
 
-|                    |                                                   |
-|--------------------|---------------------------------------------------|
-| forAll             | `jls name \| xargs …`                             |
-| Pkg upgrade forAll | `jls name \| xargs -I% jexec -l % pkg upgrade -y` |
-|                    |                                                   |
+|                    |                                                                               |
+|--------------------|-------------------------------------------------------------------------------|
+| forAll             | `jls name \| xargs …`                                                         |
+| Pkg upgrade forAll | `jls name \| xargs -I% jexec -l % pkg upgrade -y` or just `sjail pkg-upgrade` |
+
 
 ## Recipes
 

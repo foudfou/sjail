@@ -228,14 +228,6 @@ sjail_list() {
     done
 }
 
-# Convenience command
-sjail_pkg_upgrade_all() {
-    for j in $(jls -n name | sed -e 's/name=//'); do
-        echo "==== $j ===="
-        jexec $j pkg upgrade -y
-    done
-}
-
 sjail_apply() {
     local jail_name="$1"
     local recipe_name="$2"
@@ -260,6 +252,11 @@ sjail_apply() {
         jail -rc ${jail_name}
         log "[${jail_name}] ${HLINE} JAIL RESTARTED ${HLINE}"
     fi
+}
+
+# Convenience command
+sjail_pkg_upgrade_all() {
+    jls name | xargs -I% sh -c 'echo "==== % ===="; jexec -l % pkg upgrade -y'
 }
 
 
@@ -354,12 +351,12 @@ Commands:
     destroy      Destroy thin jail. Args: name
     init         Setup zpool, sysrc, networking.
     list         List status of all jails.
+    pkg-upgrade  Unattended upgrade of packages in all running jails.
     rel-create   Fetch and create base image. Args: version
                  (e.g. 14.2-RELEASE). Opts: nofetch=1 skips download.
     rel-destroy  Destroy base image. Args: version
     rel-update   Apply freebsd-update on base image with version.
                  Can be done anytime. Args: version
-    pkg-upgrade  Unattended upgrade of packages in all running jails.
     version      Show version.
 EOF
 }
