@@ -15,7 +15,7 @@ If you already have a running FreeBSD vm, you can just clone it:
 
 ```
 zfs list -r -t snapshot tank/vm
-vm clone tank/vm/sjail-test@2025-01-16-22:10:46 sjail-test1
+vm clone sjail-test@2025-01-16-22:10:46 sjail-test1
 ```
 
 ## Usage

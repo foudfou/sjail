@@ -4,7 +4,7 @@ all:
 
 # We might want to package this at some point
 install: check-root
-	install -o root -g wheel src/sjail /usr/local/bin
+	install -o root -g wheel src/sjail /usr/local/sbin
 	install -o root -g wheel -d /usr/local/share/sjail
 	install -o root -g wheel -m 644 src/recipe.sh src/common.sh src/version.sh /usr/local/share/sjail
 	install -o root -g wheel -m 644 src/sjail.conf.sample /usr/local/etc
@@ -12,7 +12,7 @@ install: check-root
 	rm -f /usr/local/share/sjail/cmd.sh
 
 deinstall: check-root
-	rm /usr/local/bin/sjail
+	rm /usr/local/sbin/sjail
 	rm -fr /usr/local/share/sjail
 
 check-root:
@@ -22,7 +22,7 @@ false; \
 fi
 
 ls-install:
-	ls -l /usr/local/bin/sjail /usr/local/share/sjail/* /usr/local/etc/sjail.conf.sample
+	ls -l /usr/local/sbin/sjail /usr/local/share/sjail/* /usr/local/etc/sjail.conf.sample
 
 # SC3037 In POSIX sh, echo flags are undefined.
 # SC3043 In POSIX sh, 'local' is undefined.
@@ -49,7 +49,7 @@ package:
 	@version=$$(git describe --tags | sed -e 's/^v//; s/-[[:digit:]]\+-g/+/'); \
 archive="sjail-$${version}.tar.xz"; \
 sed -i -e 's/SJAIL_VERSION=.*/SJAIL_VERSION="'"$${version}"'"/' src/version.sh; \
-( git archive HEAD | xz > "$${archive}" ); \
+( git archive --prefix sjail/ HEAD | xz > "$${archive}" ); \
 printf "Created %s\n" "$${archive}"
 
 .PHONY: clean
