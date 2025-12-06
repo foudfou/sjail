@@ -44,15 +44,14 @@ sjail_release_create() {
         log_fatal "$version already fetched"
     fi
 
-    VERSION_MAJOR=${version%%\.*}
-    rest=${version##*\.}
-    VERSION_MINOR=${rest%%\-*}
-    BRANCH=${rest##*\-}
+    zfs create -p "${zfs_dataset}/releases/${version}"
+
+    read VERSION_MAJOR VERSION_MINOR BRANCH <<EOF
+$(get_version_components ${version})
+EOF
     if [ "${BRANCH}" != "RELEASE" ]; then
         log_fatal "only RELEASE branch supported"
     fi
-
-    zfs create -p "${zfs_dataset}/releases/${version}"
 
     local host_fingerprintsdir="/usr/share/keys/pkgbase-${VERSION_MAJOR}"
     local release_fingerprintsdir="${release_path}/usr/share/keys"
@@ -74,15 +73,7 @@ FreeBSD-base: {
 }
 EOF
 
-    local ABI="FreeBSD:${VERSION_MAJOR}:amd64"
-    local pkg_cmd="pkg --rootdir ${release_path} --repo-conf-dir ${repos_dir} \
--o IGNORE_OSVERSION=yes \
--o VERSION_MAJOR=${VERSION_MAJOR} \
--o VERSION_MINOR=${VERSION_MINOR} \
--o ABI=${ABI} \
--o ASSUME_ALWAYS_YES=yes \
--o FINGERPRINTS=${fingerprints}"
-
+    local pkg_cmd=$(make_pkg_cmd ${release_path} ${version})
     ${pkg_cmd} update
 
     local packages="FreeBSD-set-base"
@@ -94,10 +85,12 @@ EOF
 
 sjail_release_update() {
     local version="$1"
+
     log "Updating release ${version}"
-    freebsd-update --currently-running ${version} -b ${zfs_mount}/releases/${version} fetch install
-    # TODO uncomment when code stabilizes
-    #freebsd-update --currently-running ${version} -b ${zfs_mount}/releases/${version} IDS
+
+    local release_path="${zfs_mount}/releases/${version}"
+    local pkg_cmd=$(make_pkg_cmd ${release_path} ${version})
+    ${pkg_cmd} update
 }
 
 # Only to avoid destroying a release on which some jails depend.
@@ -195,7 +188,7 @@ EOF
       ln -Fsf /.ro/${l} ${l}
     done
 
-    local rw=".cshrc .profile COPYRIGHT dev etc media mnt net proc root tmp var usr/obj usr/tests" files
+    local rw="COPYRIGHT dev etc media mnt net proc root tmp var usr/tests" files
     for files in ${rw}; do
       cp -a "${zfs_mount}/releases/${version}/${files}" "${jail_path}/root/${files}"
     done

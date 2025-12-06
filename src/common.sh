@@ -79,3 +79,34 @@ jail_conf_get_ips() {
 
     echo "${ips# }"
 }
+
+get_version_components() {
+    local version=$1  # 15.0-RELEASE
+
+    local major=${version%%.*}
+    local rest=${version##*.}
+    local minor=${rest%%-*}
+    local branch=${rest##*-}
+
+    printf '%s %s %s\n' "$major" "$minor" "$branch"
+}
+
+make_pkg_cmd() {
+    local release_path=$1
+    local version=$2
+
+    read VERSION_MAJOR VERSION_MINOR BRANCH <<EOF
+$(get_version_components ${version})
+EOF
+
+    local repos_dir="${release_path}/.pkgrepos"
+    local fingerprints="${release_path}/usr/share/keys/pkgbase-${VERSION_MAJOR}"
+    local ABI="FreeBSD:${VERSION_MAJOR}:amd64"
+    printf "pkg --rootdir ${release_path} --repo-conf-dir ${repos_dir} \
+-o IGNORE_OSVERSION=yes \
+-o VERSION_MAJOR=${VERSION_MAJOR} \
+-o VERSION_MINOR=${VERSION_MINOR} \
+-o ABI=${ABI} \
+-o ASSUME_ALWAYS_YES=yes \
+-o FINGERPRINTS=${fingerprints}\n"
+}
