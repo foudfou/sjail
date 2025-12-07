@@ -74,10 +74,8 @@ FreeBSD-base: {
 EOF
 
     local pkg_cmd=$(make_pkg_cmd ${release_path} ${version})
-    ${pkg_cmd} update
-
-    local packages="FreeBSD-set-base"
-    ${pkg_cmd} install ${packages}
+    ${pkg_cmd} update -r FreeBSD-base
+    ${pkg_cmd} install -r FreeBSD-base FreeBSD-set-base
 
     touch "${release_path}/root/.hushlogin"
     touch "${release_path}/usr/share/skel/dot.hushlogin"
@@ -90,7 +88,7 @@ sjail_release_update() {
 
     local release_path="${zfs_mount}/releases/${version}"
     local pkg_cmd=$(make_pkg_cmd ${release_path} ${version})
-    ${pkg_cmd} update
+    ${pkg_cmd} update -r FreeBSD-base
 }
 
 # Only to avoid destroying a release on which some jails depend.
