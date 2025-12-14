@@ -79,34 +79,3 @@ jail_conf_get_ips() {
 
     echo "${ips# }"
 }
-
-next_jid() {
-    local jail_confs="$*"
-
-    local jids=$(grep -h -E '^\s*jid\s*=' ${jail_confs} 2>/dev/null | \
-                 sed -E 's/[[:space:]]*jid[[:space:]]+=[[:space:]]+([0-9]+).*/\1/' | \
-                 sort -n -u)
-
-    # Find first gap or return max+1
-    local nxt=1
-    for cur in $jids; do
-        if [ "$cur" -gt "$nxt" ]; then
-            printf "$nxt"
-            return
-        fi
-        nxt=$((cur + 1))
-    done
-
-    printf "$nxt"
-}
-
-# Deterministic MAC to avoid ARP cache instability.
-jail_mac() {
-    local name="$1"
-
-    h=$(printf "${name}" | md5)
-    printf "02:ff:ff:%s:%s:%s" \
-        $(printf "${h}" | cut -c1-2) \
-        $(printf "${h}" | cut -c3-4) \
-        $(printf "${h}" | cut -c5-6)
-}
