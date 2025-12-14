@@ -98,6 +98,7 @@ sjail_create() {
     local ip6=$(arg_get ip6 "$@")
     local nat=$(arg_get nat "$@")
     local rdr=$(arg_get rdr "$@")
+    local vnet=$(arg_get vnet "$@")
     log "Creating thin jail: $jail_name"
 
     zfs create -p "${zfs_dataset}/jails/${jail_name}"
@@ -133,6 +134,38 @@ EOF
   exec.prestop   += \"${sjail} _hook_stop \$name\";
 "
 
+    # Shared interface - default networking.
+    local networking="
+  interface = ${interface};
+  ${ip4_addr}
+  ${ip6_addr}
+  ${ip6_mode}
+"
+
+    # Vnet if_bridge = bridged to physical network, aka vnet standard. ≠
+    # private jail network:
+    #
+    # cloned_interfaces="bridge0"
+    # ifconfig_bridge0="inet 10.0.0.1/24 description jailnet up"
+    # gateway_enable="YES"
+    # pf_enable="YES"
+    if [ "${vnet}" = "ifbr" ]; then
+        local gw4=$(netstat -4rn | awk '/default/ {print $2}')
+
+        networking="
+  vnet;
+  vnet.interface = \"e0b_\$name\";  # jib creates this
+
+  exec.prestart += \"jib addm \$name em0\";
+  exec.poststop += \"jib destroy \$name\";
+
+  exec.start += \"ifconfig e0b_\$name inet ${ip4}\";
+  exec.start += \"/sbin/route add default ${gw4}\";
+  exec.start += \"/bin/sh /etc/rc\";
+  exec.stop   = \"/bin/sh /etc/rc.shutdown\";
+"
+    fi
+
     local jail_path_in_conf="${zfs_mount}/jails/\$name"
     cat << EOF > "${jail_path}/jail.conf"
 ${jail_name} {
@@ -143,11 +176,12 @@ ${jail_name} {
   exec.consolelog = ${jail_path_in_conf}/console.log;
   exec.start = '/bin/sh /etc/rc';
   exec.stop = '/bin/sh /etc/rc.shutdown';
-  exec.prestart  += "cp /etc/resolv.conf \$path/etc/resolv.conf";
-  exec.prestart  += "cp /etc/localtime \$path/etc";
+
+  exec.prestart += "install -m 0644 ${zfs_mount}/jails/resolv.conf \$path/etc/resolv.conf";
+  exec.prestart += "cp /etc/localtime \$path/etc";
   ${hooks}
-  exec.poststop  += "rm \$path/etc/resolv.conf";
-  exec.poststop  += "rm \$path/etc/localtime";
+  exec.poststop += "rm \$path/etc/resolv.conf";
+  exec.poststop += "rm \$path/etc/localtime";
 
   mount.devfs;
   mount.fstab = ${jail_path_in_conf}/fstab;
@@ -156,10 +190,7 @@ ${jail_name} {
 
   securelevel = 2;
 
-  interface = ${interface};
-  ${ip4_addr}
-  ${ip6_addr}
-  ${ip6_mode}
+$networking
 }
 EOF
 
@@ -347,7 +378,7 @@ Options:
 Commands:
     apply        Apply recipe on jail. Args: name recipe
     create       Create thin jail from base image. Args: name version.
-                 Opts: ip4, ip6, nat, rdr
+                 Opts: ip4, ip6, nat, rdr, vnet
     destroy      Destroy thin jail. Args: name
     init         Setup zpool, sysrc, networking.
     list         List status of all jails.

@@ -8,8 +8,7 @@ install: check-root
 	install -o root -g wheel -d /usr/local/share/sjail
 	install -o root -g wheel -m 644 src/recipe.sh src/common.sh src/version.sh /usr/local/share/sjail
 	install -o root -g wheel -m 644 src/sjail.conf.sample /usr/local/etc
-	@## cleanup
-	rm -f /usr/local/share/sjail/cmd.sh
+	install -o root -g wheel -m 755 /usr/share/examples/jails/jib /usr/local/sbin/jib
 
 deinstall: check-root
 	rm /usr/local/sbin/sjail
