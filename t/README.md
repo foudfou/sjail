@@ -74,12 +74,12 @@ EOF
 
 pkg install perl5
 
-~ CTRL-D
-
 mkdir sjail
 # copy sjail code over to sjail/
 make install
 sjail init
+
+~ CTRL-D
 
 # back on host
 vm snapshot sjail-test

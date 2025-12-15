@@ -124,10 +124,6 @@ EOF
         nat=${nat:-1}
         rdr=${rdr:-1}
     fi
-    # TODO use jail metadata when they're available
-    # https://people.freebsd.org/~dch/posts/2025-01-12-jail-metadata/
-    echo jail_meta_nat="${nat}" >> "${jail_path}/meta.conf"
-    echo jail_meta_rdr="${rdr}" >> "${jail_path}/meta.conf"
 
     local hooks="
   exec.poststart += \"${sjail} _hook_start \$name\";
@@ -142,27 +138,18 @@ EOF
   ${ip6_mode}
 "
 
-    # Vnet if_bridge = bridged to physical network, aka vnet standard. ≠
-    # private jail network:
-    #
-    # cloned_interfaces="bridge0"
-    # ifconfig_bridge0="inet 10.0.0.1/24 description jailnet up"
-    # gateway_enable="YES"
-    # pf_enable="YES"
-    if [ "${vnet}" = "ifbr" ]; then
+    if [ -n "${vnet}" ]; then
         local gw4=$(netstat -4rn | awk '/default/ {print $2}')
 
         networking="
   vnet;
-  vnet.interface = \"e0b_\$name\";  # jib creates this
+  vnet.interface = \"e0b_\$name\";  # set by sjail hook
 
-  exec.prestart += \"jib addm \$name em0\";
-  exec.poststop += \"jib destroy \$name\";
+  exec.prestart += \"${sjail} _vnet_start \$name\";
+  exec.poststop += \"${sjail} _vnet_stop \$name\";
 
   exec.start += \"ifconfig e0b_\$name inet ${ip4}\";
   exec.start += \"/sbin/route add default ${gw4}\";
-  exec.start += \"/bin/sh /etc/rc\";
-  exec.stop   = \"/bin/sh /etc/rc.shutdown\";
 "
     fi
 
@@ -193,6 +180,12 @@ ${jail_name} {
 $networking
 }
 EOF
+
+    # TODO use jail metadata when they're available
+    # https://people.freebsd.org/~dch/posts/2025-01-12-jail-metadata/
+    echo jail_meta_nat="${nat}" >> "${jail_path}/meta.conf"
+    echo jail_meta_rdr="${rdr}" >> "${jail_path}/meta.conf"
+    echo jail_meta_vnet="${vnet}" >> "${jail_path}/meta.conf"
 
     mkdir "${jail_path}/root"
     cd "${jail_path}/root"
@@ -324,6 +317,10 @@ sjail_hook_stop() {
 
     . "${jail_path}/meta.conf"
 
+    if [ "${jail_meta_rdr}" = "1" ]; then
+        pf_rdr_clear "${jail_name}"
+    fi
+
     if [ "${jail_meta_nat}" = "1" ]; then
         local ip4s=$(jail_conf_get_ips "${jail_name}" ip4)
         local ip6s=$(jail_conf_get_ips "${jail_name}" ip6)
@@ -331,10 +328,6 @@ sjail_hook_stop() {
         for ip in ${ip4s} ${ip6s}; do
             pfctl -q -t jails -T delete "${ip}"
         done
-    fi
-
-    if [ "${jail_meta_rdr}" = "1" ]; then
-        pf_rdr_clear "${jail_name}"
     fi
 }
 
@@ -364,6 +357,34 @@ pf_rdr_add() {
 pf_rdr_clear() {
     local jail_name=$1
     pfctl -a "rdr/${jail_name}" -Fn
+}
+
+# Manual bridge. jib doesn't allow for arbitrary bridges.
+sjail_vnet_start() {
+    local jail_name="$1"; shift
+    local jail_path="${zfs_mount}/jails/${jail_name}"
+
+    . "${jail_path}/meta.conf"
+
+    local bridge=${jail_meta_vnet}
+
+    epair=$(ifconfig epair create)
+    ifconfig ${bridge} addm ${epair}
+    ifconfig ${epair} up name "e0a_${jail_name}"
+    ifconfig ${epair%a}b up name "e0b_${jail_name}"
+
+    read mac_a mac_b <<EOF
+$(jail_macs "${jail_name}")
+EOF
+
+    ifconfig "e0a_${jail_name}" ether ${mac_a}
+    ifconfig "e0b_${jail_name}" ether ${mac_b}
+}
+
+sjail_vnet_stop() {
+    local jail_name="$1"; shift
+
+    ifconfig "e0b_${jail_name}" destroy
 }
 
 
@@ -453,6 +474,12 @@ case $command in
         ;;
     _hook_stop)
         sjail_hook_stop "$@"
+        ;;
+    _vnet_start)
+        sjail_vnet_start "$@"
+        ;;
+    _vnet_stop)
+        sjail_vnet_stop "$@"
         ;;
     *)
         usage

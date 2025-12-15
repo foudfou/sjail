@@ -79,3 +79,21 @@ jail_conf_get_ips() {
 
     echo "${ips# }"
 }
+
+jail_macs() {
+    local name="$1"
+
+    local h=$(printf "%s" "$name" | md5)
+
+    local mac_a=$(printf "02:ff:ff:%s:%s:%s" \
+        $(echo "$h" | cut -c1-2) \
+        $(echo "$h" | cut -c3-4) \
+        $(echo "$h" | cut -c5-6))
+
+    local mac_b=$(printf "02:ff:ff:%s:%s:%s" \
+        $(echo "$h" | cut -c7-8) \
+        $(echo "$h" | cut -c9-10) \
+        $(echo "$h" | cut -c11-12))
+
+    printf "%s %s" "$mac_a" "$mac_b"
+}

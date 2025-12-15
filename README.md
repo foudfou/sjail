@@ -10,10 +10,10 @@ Provides:
 ## Motivation
 
 - Easy to understand.
-- Limited rigid feature set:
+- Rigid limited feature set:
   - Leverage jail(8) as much as possible;
   - ZFS thin jails only;
-  - Networking via shared interface or cloned loopback interface and `pf`;
+  - Networking via shared interface (default), cloned loopback or VNET;
 
 ## Usage
 
@@ -25,6 +25,14 @@ For loopback networking (optional):
 
 ```
 # sysrc cloned_interfaces+="lo1"
+# service netif cloneup
+```
+
+For VNET networking (optional):
+
+```
+# sysrc cloned_interfaces+="bridge0"
+# sysrc ifconfig_bridge0="addm em0 up"  # attach to physical network
 # service netif cloneup
 ```
 
@@ -40,18 +48,19 @@ Create and review `/usr/local/etc/sjail.conf`:
 
 Following commands are provided:
 
-|                 |                                                                                     |
-|-----------------|-------------------------------------------------------------------------------------|
-| Init            | `sjail init`                                                                        |
-| Create release  | `sjail rel-create 14.2-RELEASE`                                                     |
-| Update release  | `sjail rel-update 14.2-RELEASE`                                                     |
-| Destroy release | `sjail rel-destroy 14.2-RELEASE`                                                    |
-| Create jail     | `sjail create alcatraz 14.2-RELEASE ip4=10.1.1.11 ip6=fd10:0:0:100::11 nat=1 rdr=0` |
-| Destroy jail    | `sjail destroy alcatraz`                                                            |
-| List            | `jls` or `sjail list` for all                                                       |
-| Start           | `jail -c alcatraz`                                                                  |
-| Stop            | `jail -r alcatraz`                                                                  |
-| Recipe          | `sjail apply alcatraz some/recipe`                                                  |
+|                 |                                                                                        |
+|-----------------|----------------------------------------------------------------------------------------|
+| Init            | `sjail init`                                                                           |
+| Create release  | `sjail rel-create 14.2-RELEASE`                                                        |
+| Update release  | `sjail rel-update 14.2-RELEASE`                                                        |
+| Destroy release | `sjail rel-destroy 14.2-RELEASE`                                                       |
+| Create jail     | `sjail create alcatraz 14.2-RELEASE ip4=10.1.1.11/24 ip6=fd10:0:0:100::11 nat=1 rdr=0` |
+|                 | `sjail create alcatraz 14.2-RELEASE ip4=10.1.1.11/24 nat=1 vnet=bridge0`               |
+| Destroy jail    | `sjail destroy alcatraz`                                                               |
+| List            | `jls` or `sjail list` for all                                                          |
+| Start           | `jail -c alcatraz`                                                                     |
+| Stop            | `jail -r alcatraz`                                                                     |
+| Recipe          | `sjail apply alcatraz some/recipe`                                                     |
 
 Compose your own:
 
@@ -198,10 +207,30 @@ VPN server, and jails that:
 A solution to these requirements is a *shared interface* setup and only
 enabling NAT for jails.
 
+### VNET
+
+Sjail does not automatically create bridges. Since a physical interface can
+only belong to one bridge at a time, you may need to manually create a shared
+bridge when both jails and VMs need LAN access. For example, create `bridge0`
+and configure vm-bhyve to use it: `vm switch create -t manual -b bridge0
+public`.
+
+One can also create a private jail network:
+
+```
+# sysrc cloned_interfaces+="bridge0"
+# sysrc ifconfig_bridge0="inet 10.0.0.1/24 description jailnet up"
+# sysrc gateway_enable="YES"
+# sysrc pf_enable="YES"  # adapt accordingly
+```
+
+VNET jails are useful when applications insist on binding to 127.0.0.1 (like
+Gradle), as each jail gets its own isolated loopback interface.
+
 ## Upgrade
 
 Provided the jails don't hold important state, upgrading to a new minor or
-major release is best done by re-creating them.
+major FreeBSD release is best done by re-creating them.
 
 For minor release changes, pointing the jails' `fstab`s to the new release
 after stopping them is also a viable option.
