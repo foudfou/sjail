@@ -23,7 +23,8 @@ tap_ok $? "$t: .include in /etc/jails.conf"
 sysrc -c jail_enable="YES"
 tap_ok $? "$t: sysrc jail_enable"
 
-sysrc -c cloned_interfaces+="${interface}"
+# `sysrc -c cloned_interfaces+="${interface}"` buggy
+sysrc cloned_interfaces | grep -q -w "${interface}"
 tap_ok $? "$t: CLONED INTERFACE IS REQUIRED FOR TESTS"
 
 tap_end

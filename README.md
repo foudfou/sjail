@@ -38,12 +38,12 @@ For VNET networking (optional):
 
 Create and review `/usr/local/etc/sjail.conf`:
 
-|               |                                                                                                                            |
-|---------------|----------------------------------------------------------------------------------------------------------------------------|
-| `zfs_dataset` | pool to store all sjail data (will be created by `sjail init`)                                                             |
-| `zfs_mount`   | mountpoint for sjail data                                                                                                  |
-| `interface`   | interface to attach jails to. **Dictates the network setup**: `loX` for cloned loopback, anything else is shared interface |
-| `pf_ext_if`   | the external interface on which traffic for jails is expected (relevant for loopback networking)                           |
+|               |                                                                                                                                    |
+|---------------|------------------------------------------------------------------------------------------------------------------------------------|
+| `zfs_dataset` | pool to store all sjail data (will be created by `sjail init`)                                                                     |
+| `zfs_mount`   | mountpoint for sjail data                                                                                                          |
+| `interface`   | default interface to attach jails to. **Dictates the network setup**: `loX` for cloned loopback, anything else is shared interface |
+| `pf_ext_if`   | pf.conf variable for the external interface on which traffic for jails is expected (relevant for loopback networking)              |
 
 
 Following commands are provided:

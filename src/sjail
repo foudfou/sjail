@@ -2,7 +2,7 @@
 set -eu
 sjail=$(realpath "$0")
 
-freebsd_url=https://download.freebsd.org/releases/amd64/amd64/
+freebsd_url=https://download.freebsd.org/releases/amd64/amd64
 # Not strictly necessary. zroot nowadays is created with compress=lz4 atime=off
 # and these are inherited by sub-datasets. This could still be useful when the
 # dataset in not on zroot. See
@@ -126,8 +126,8 @@ EOF
     fi
 
     local hooks="
-  exec.poststart += \"${sjail} _hook_start \$name\";
-  exec.prestop   += \"${sjail} _hook_stop \$name\";
+  exec.poststart += \"${sjail} _pf_start \$name\";
+  exec.prestop   += \"${sjail} _pf_stop \$name\";
 "
 
     # Shared interface - default networking.
@@ -181,7 +181,7 @@ $networking
 }
 EOF
 
-    # TODO use jail metadata when they're available
+    # TODO use jail meta in 15.0-RELEASE
     # https://people.freebsd.org/~dch/posts/2025-01-12-jail-metadata/
     echo jail_meta_nat="${nat}" >> "${jail_path}/meta.conf"
     echo jail_meta_rdr="${rdr}" >> "${jail_path}/meta.conf"
@@ -285,7 +285,7 @@ sjail_pkg_upgrade_all() {
 
 
 # Additional jail start operations
-sjail_hook_start() {
+sjail_hook_pf_start() {
     local jail_name="$1"
     local jail_path="${zfs_mount}/jails/${jail_name}"
 
@@ -311,7 +311,7 @@ sjail_hook_start() {
 }
 
 # Additional jail stop operations
-sjail_hook_stop() {
+sjail_hook_pf_stop() {
     local jail_name="$1"
     local jail_path="${zfs_mount}/jails/${jail_name}"
 
@@ -360,7 +360,7 @@ pf_rdr_clear() {
 }
 
 # Manual bridge. jib doesn't allow for arbitrary bridges.
-sjail_vnet_start() {
+sjail_hook_vnet_start() {
     local jail_name="$1"; shift
     local jail_path="${zfs_mount}/jails/${jail_name}"
 
@@ -376,12 +376,11 @@ sjail_vnet_start() {
     read mac_a mac_b <<EOF
 $(jail_macs "${jail_name}")
 EOF
-
     ifconfig "e0a_${jail_name}" ether ${mac_a}
     ifconfig "e0b_${jail_name}" ether ${mac_b}
 }
 
-sjail_vnet_stop() {
+sjail_hook_vnet_stop() {
     local jail_name="$1"; shift
 
     ifconfig "e0b_${jail_name}" destroy
@@ -469,17 +468,17 @@ case $command in
     apply)
         sjail_apply "$@"
         ;;
-    _hook_start)
-        sjail_hook_start "$@"
+    _pf_start)
+        sjail_hook_pf_start "$@"
         ;;
-    _hook_stop)
-        sjail_hook_stop "$@"
+    _pf_stop)
+        sjail_hook_pf_stop "$@"
         ;;
     _vnet_start)
-        sjail_vnet_start "$@"
+        sjail_hook_vnet_start "$@"
         ;;
     _vnet_stop)
-        sjail_vnet_stop "$@"
+        sjail_hook_vnet_stop "$@"
         ;;
     *)
         usage

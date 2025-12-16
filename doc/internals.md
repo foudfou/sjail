@@ -21,11 +21,11 @@ Each jail has its own `jail.conf`. The general `/etc/jail.conf` has an
 `.include` directive so the native `jail(8)` system knows about sjail jails.
 
 The jails' `jail.conf` includes start and stop hooks that enable additional
-runtime jail configuration (only related to `pf` at this point):
+runtime jail configuration (related to networking at this point):
 
 ```
-  exec.poststart += "/usr/local/bin/sjail/sjail _hook_start $name";
-  exec.prestop   += "/usr/local/bin/sjail/sjail _hook_stop $name";
+  exec.poststart += "/usr/local/bin/sjail/sjail _<hook>_start $name";
+  exec.prestop   += "/usr/local/bin/sjail/sjail _<hook>_stop $name";
 ```
 
 ## Recipes

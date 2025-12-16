@@ -8,7 +8,7 @@ cleanup() {
     exit 1
 }
 
-t="create"
+t="create meta"
 
 sjail create j01 "${release}" ip4=10.1.1.11 nat=1 rdr=0 >/dev/null ||suicide
 

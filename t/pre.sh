@@ -24,4 +24,7 @@ suicide() { # intended for non-test commands
 #
 
 # Make sure this is consistent with the guest system
-release="14.2-RELEASE"
+release="14.3-RELEASE"
+
+# Test jail assigned IP. VNET expects an IP in the bridge network.
+test_jail_ip4=192.168.1.112

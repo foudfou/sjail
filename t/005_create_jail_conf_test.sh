@@ -20,7 +20,7 @@ grep -q addr ${jail_conf};  [ $? = 1 ]
 tap_ok $? "$t: no ip"
 grep -q -E 'interface = lo1;' ${jail_conf};
 tap_ok $? "$t: loopback interface"
-grep -q _hook ${jail_conf};
+grep -q _pf ${jail_conf};
 tap_ok $? "$t: hooks"
 sjail destroy alcatraz >/dev/null ||suicide
 
@@ -44,15 +44,15 @@ sed -ie 's/interface=.*/interface="vtnet0"/' /usr/local/etc/sjail.conf
 sjail create alcatraz "${release}" ip4=1.2.3.4 >/dev/null ||suicide
 grep -q -E 'interface = vtnet0;' ${jail_conf};
 tap_ok $? "$t: shared interface"
-grep -q _hook ${jail_conf}; [ $? = 1 ]
-tap_ok $? "$t: no hooks for shared interface"
+grep -q _pf ${jail_conf}
+tap_ok $? "$t: hooks for shared interface"
 sjail destroy alcatraz >/dev/null ||suicide
 
 sed -ie 's/interface=.*/interface="lo1"/' /usr/local/etc/sjail.conf
 sjail create alcatraz "${release}" ip4=1.2.3.4 >/dev/null ||suicide
 grep -q -E 'interface = lo1;' ${jail_conf};
 tap_ok $? "$t: loopback interface - explicit"
-grep -q _hook ${jail_conf}
+grep -q _pf ${jail_conf}
 tap_ok $? "$t: hooks for loopback - explicit loopback"
 sjail destroy alcatraz >/dev/null ||suicide
 

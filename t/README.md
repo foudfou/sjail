@@ -12,10 +12,14 @@ vm-bhyve, then:
 
 ```
 pkg install qemu-tools
-vm img https://download.freebsd.org/releases/VM-IMAGES/14.2-RELEASE/amd64/Latest/FreeBSD-14.2-RELEASE-amd64-zfs.raw.xz
-vm create -t freebsd-zvol -i FreeBSD-14.2-RELEASE-amd64-zfs.raw sjail-test
+# vm img supports .raw .qcow2
+vm img https://download.freebsd.org/releases/VM-IMAGES/14.3-RELEASE/amd64/Latest/FreeBSD-14.3-RELEASE-amd64-zfs.qcow2.xz
+vm create -t freebsd-zvol -i FreeBSD-14.3-RELEASE-amd64-zfs.qcow2 sjail-test
 vm start sjail-test
 vm console sjail-test # login: root no password
+
+echo nameserver 192.168.1.1 > /etc/resolv.conf
+cp /usr/share/zoneinfo/Europe/Berlin /etc/localtime
 
 # in the console
 passwd
@@ -27,10 +31,13 @@ defaultrouter="192.168.1.1"
 sshd_enable="YES"
 zfs_enable="YES"
 pf_enable="YES"
-cloned_interfaces="lo1"
+cloned_interfaces="lo1 bridge0"
+ifconfig_bridge0="addm em0 up"
 EOF
+service netif restart
 
 sed -i -e 's/^#PermitRootLogin .*/PermitRootLogin yes/' /etc/ssh/sshd_config
+ssh-keygen -A
 service sshd restart
 
 mkdir /root/.ssh
@@ -42,8 +49,8 @@ mkdir -p /usr/local/etc
 cat <<EOF >/usr/local/etc/sjail.conf
 zfs_dataset="zroot/sjail"
 zfs_mount="/sjail"
-interface="vtnet0"
-pf_ext_if=""
+interface="lo1"
+pf_ext_if="ext_if"
 EOF
 
 cat <<EOF >/etc/pf.conf
@@ -76,7 +83,7 @@ pkg install perl5
 
 mkdir sjail
 # copy sjail code over to sjail/
-make install
+make -C sjail install
 sjail init
 
 ~ CTRL-D
@@ -90,10 +97,10 @@ vm snapshot sjail-test
 Note we're intentionally focusing on the cloned loopback network setup as it's
 more involved than the shared interface.
 
-Then
+Review `t/pre.sh` then
 
 ```
-make test
+make test-unit
 ```
 
 Or run individual tests:
