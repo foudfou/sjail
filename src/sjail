@@ -108,6 +108,7 @@ sjail_create() {
 ${zfs_mount}/releases/${version} ${jail_path}/root/.ro nullfs ro 0 0
 EOF
 
+    # DHCP not supported for now.
     local ip4_addr=""
     if [ -n "${ip4}" ]; then
         ip4_addr="ip4.addr = ${ip4};"
@@ -139,17 +140,12 @@ EOF
 "
 
     if [ -n "${vnet}" ]; then
-        local gw4=$(netstat -4rn | awk '/default/ {print $2}')
-
         networking="
   vnet;
   vnet.interface = \"e0b_\$name\";  # set by sjail hook
 
   exec.prestart += \"${sjail} _vnet_start \$name\";
   exec.poststop += \"${sjail} _vnet_stop \$name\";
-
-  exec.start += \"ifconfig e0b_\$name inet ${ip4}\";
-  exec.start += \"/sbin/route add default ${gw4}\";
 "
     fi
 
@@ -206,6 +202,22 @@ EOF
     mkdir -p usr/home
     ln -s usr/home home
     touch etc/fstab
+
+    if [ -n "${vnet}" ] && [ -n "${ip4}" ]; then
+        local gw4=$(netstat -4rn | awk '/default/ {print $2}')
+        cat >> etc/rc.conf <<EOF
+ifconfig_e0b_${jail_name}="inet ${ip4}"
+defaultrouter="${gw4}"
+EOF
+    fi
+
+    if [ -n "${vnet}" ] && [ -n "${ip6}" ]; then
+        local gw6=$(netstat -6rn | awk '/default/ {print $2}')
+        cat >> etc/rc.conf <<EOF
+ifconfig_e0b_${jail_name}_ipv6="inet6 ${ip6}"
+ipv6_defaultrouter="${gw6}"
+EOF
+    fi
 
     cd -
 

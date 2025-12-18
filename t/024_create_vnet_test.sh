@@ -38,6 +38,12 @@ icfg=$(jexec -l j01 ifconfig e0b_j01)
 tap_ok $? "$t: jail started"
 mac1=$(echo "$icfg" | grep -E '\sether ')
 
+jexec -l j01 ifconfig e0b_j01 | grep -q -E '\sinet '${test_jail_ip4}' '
+tap_ok $? "$t: ip4 set"
+
+jexec -l j01 netstat -4rn | grep -qw 'default'
+tap_ok $? "$t: default route set"
+
 jail -r j01 >/dev/null 2>&1 ||suicide
 
 
