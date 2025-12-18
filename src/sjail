@@ -96,6 +96,8 @@ sjail_create() {
     local version="$1"; shift
     local ip4=$(arg_get ip4 "$@")
     local ip6=$(arg_get ip6 "$@")
+    local iface=$(arg_get iface "$@")
+    iface=${iface:-${interface}}
     local nat=$(arg_get nat "$@")
     local rdr=$(arg_get rdr "$@")
     local vnet=$(arg_get vnet "$@")
@@ -120,20 +122,13 @@ EOF
         ip6_mode="ip6 = new;"
     fi
 
-    # Cloned loopback network setup
-    if [ "$(printf %.2s ${interface})" = "lo" ]; then
-        nat=${nat:-1}
-        rdr=${rdr:-1}
-    fi
-
     local hooks="
   exec.poststart += \"${sjail} _pf_start \$name\";
   exec.prestop   += \"${sjail} _pf_stop \$name\";
 "
 
-    # Shared interface - default networking.
     local networking="
-  interface = ${interface};
+  interface = ${iface};
   ${ip4_addr}
   ${ip6_addr}
   ${ip6_mode}
@@ -181,7 +176,8 @@ EOF
     # https://people.freebsd.org/~dch/posts/2025-01-12-jail-metadata/
     echo jail_meta_nat="${nat}" >> "${jail_path}/meta.conf"
     echo jail_meta_rdr="${rdr}" >> "${jail_path}/meta.conf"
-    echo jail_meta_vnet="${vnet}" >> "${jail_path}/meta.conf"
+    # Only relevant for vnet.
+    echo jail_meta_iface="${iface}" >> "${jail_path}/meta.conf"
 
     mkdir "${jail_path}/root"
     cd "${jail_path}/root"
@@ -346,8 +342,6 @@ sjail_hook_pf_stop() {
 pf_rdr_add() {
     local jail_name=$1 proto=$2 host_port=$3 jail_port=$4
 
-    local ext_if=$(prop_get ${pf_ext_if} /etc/pf.conf)
-
     # Taking the first ip for redirection by convention.
     local jail_ip4=$(jail_conf_get_ips "${jail_name}" ip4 | cut -d" " -f1)
     if [ -n "$jail_ip4" ]; then
@@ -378,7 +372,7 @@ sjail_hook_vnet_start() {
 
     . "${jail_path}/meta.conf"
 
-    local bridge=${jail_meta_vnet}
+    local bridge=${jail_meta_iface}
 
     epair=$(ifconfig epair create)
     ifconfig ${bridge} addm ${epair}
@@ -410,7 +404,7 @@ Options:
 Commands:
     apply        Apply recipe on jail. Args: name recipe
     create       Create thin jail from base image. Args: name version.
-                 Opts: ip4, ip6, nat, rdr, vnet
+                 Opts: ip4, ip6, nat, rdr, vnet, iface
     destroy      Destroy thin jail. Args: name
     init         Setup zpool, sysrc, networking.
     list         List status of all jails.

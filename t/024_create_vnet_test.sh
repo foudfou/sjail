@@ -20,13 +20,13 @@ else
     tap_end
 fi
 
-sjail create j01 "${release}" ip4=${test_jail_ip4} vnet=bridge0 >/dev/null ||suicide
+sjail create j01 "${release}" ip4=${test_jail_ip4} vnet=1 iface=bridge0 >/dev/null ||suicide
 
 jail_path="${zfs_mount}/jails/j01"
 grep -q vnet "${jail_path}/jail.conf"
 tap_ok $? "$t: conf vnet"
 
-grep -q "vnet=bridge0" "${jail_path}/meta.conf"
+grep -q "_iface=bridge0" "${jail_path}/meta.conf"
 tap_ok $? "$t: meta bridge0"
 
 jail -c j01 >/dev/null ||suicide

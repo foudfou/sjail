@@ -13,7 +13,7 @@ t="complex ip"
 addr4="lo1|127.0.1.1,vtnet0|192.168.1.81/24"
 # Not sure about use cases with multiple ip6 and on different interfaces.
 addr6="lo1|fd10::1,vtnet0|fd10::2/24"
-sjail create j01 "${release}" ip4="${addr4}" ip6="${addr6}" >/dev/null ||suicide
+sjail create j01 "${release}" ip4="${addr4}" ip6="${addr6}" nat=1 rdr=1 >/dev/null ||suicide
 
 jail_conf="${zfs_mount}/jails/j01/jail.conf"
 grep -q "ip4.addr = ${addr4};" ${jail_conf}

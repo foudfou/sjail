@@ -16,7 +16,7 @@ t="networking cloned loopback"
 conf='zfs_dataset="zroot/sjail"
 zfs_mount="/sjail"
 interface="lo1"
-pf_ext_if="ext_if"'
+ext_if="vtnet0"'
 
 pf='ext_if=vtnet0
 icmp_types  = "{ echoreq, unreach }"
@@ -49,7 +49,7 @@ for vm in $vm1 $vm2; do
 done
 
 
-ssh root@"${vm1}" sjail create j01 "${release}" ip4="${jail1}"/24
+ssh root@"${vm1}" sjail create j01 "${release}" ip4="${jail1_lo}"/24 nat=1 rdr=1
 
 echo "tcp 1234 5555" | ssh root@"${vm1}" -T "cat > /sjail/jails/j01/rdr.conf"
 

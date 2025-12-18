@@ -5,7 +5,7 @@ Simple thin jail management tool.
 Provides:
 
 1. a straightforward script to create/destroy jails
-2. recipe scripts to customize jails, heavily inspired by [Bastille](https://github.com/BastilleBSD/bastille)
+2. a recipe system to initialize jails, heavily inspired by [Bastille](https://github.com/BastilleBSD/bastille)
 
 ## Motivation
 
@@ -13,7 +13,7 @@ Provides:
 - Rigid limited feature set:
   - Leverage jail(8) as much as possible;
   - ZFS thin jails only;
-  - Networking via shared interface (default), cloned loopback or VNET;
+  - Unopiniated networking (can mix shared interface, cloned loopback and VNET);
 
 ## Usage
 
@@ -38,29 +38,29 @@ For VNET networking (optional):
 
 Create and review `/usr/local/etc/sjail.conf`:
 
-|               |                                                                                                                                    |
-|---------------|------------------------------------------------------------------------------------------------------------------------------------|
-| `zfs_dataset` | pool to store all sjail data (will be created by `sjail init`)                                                                     |
-| `zfs_mount`   | mountpoint for sjail data                                                                                                          |
-| `interface`   | default interface to attach jails to. **Dictates the network setup**: `loX` for cloned loopback, anything else is shared interface |
-| `pf_ext_if`   | pf.conf variable for the external interface on which traffic for jails is expected (relevant for loopback networking)              |
-
+|               |                                                                               |
+|---------------|-------------------------------------------------------------------------------|
+| `zfs_dataset` | pool to store all sjail data (will be created by `sjail init`)                |
+| `zfs_mount`   | mountpoint for sjail data                                                     |
+| `interface`   | default interface to attach jails to.                                         |
+| `ext_if`      | external interface used in pf RDR rules to forward incoming traffic to jails. |
 
 Following commands are provided:
 
-|                 |                                                                                        |
-|-----------------|----------------------------------------------------------------------------------------|
-| Init            | `sjail init`                                                                           |
-| Create release  | `sjail rel-create 14.2-RELEASE`                                                        |
-| Update release  | `sjail rel-update 14.2-RELEASE`                                                        |
-| Destroy release | `sjail rel-destroy 14.2-RELEASE`                                                       |
-| Create jail     | `sjail create alcatraz 14.2-RELEASE ip4=10.1.1.11/24 ip6=fd10:0:0:100::11 nat=1 rdr=0` |
-|                 | `sjail create alcatraz 14.2-RELEASE ip4=10.1.1.11/24 nat=1 vnet=bridge0`               |
-| Destroy jail    | `sjail destroy alcatraz`                                                               |
-| List            | `jls` or `sjail list` for all                                                          |
-| Start           | `jail -c alcatraz`                                                                     |
-| Stop            | `jail -r alcatraz`                                                                     |
-| Recipe          | `sjail apply alcatraz some/recipe`                                                     |
+|                 |                                                                                           |
+|-----------------|-------------------------------------------------------------------------------------------|
+| Init            | `sjail init`                                                                              |
+| Create release  | `sjail rel-create 14.2-RELEASE`                                                           |
+| Update release  | `sjail rel-update 14.2-RELEASE`                                                           |
+| Destroy release | `sjail rel-destroy 14.2-RELEASE`                                                          |
+| Create jail     | `sjail create alcatraz 14.2-RELEASE ip4=192.168.1.11/24 ip6=fd10:0:0:100::11 nat=1 rdr=0` |
+|                 | `sjail create alcatraz 14.2-RELEASE ip4=10.1.1.13/24 iface=lo1 nat=1 rdr=1`               |
+|                 | `sjail create alcatraz 14.2-RELEASE ip4=192.168.1.12/24 vnet=1 iface=bridge0 nat=1`       |
+| Destroy jail    | `sjail destroy alcatraz`                                                                  |
+| List            | `jls` or `sjail list` for all                                                             |
+| Start           | `jail -c alcatraz`                                                                        |
+| Stop            | `jail -r alcatraz`                                                                        |
+| Recipe          | `sjail apply alcatraz some/recipe`                                                        |
 
 Compose your own:
 
@@ -85,12 +85,12 @@ directory comprised of:
 | Command   | Comments                                                                                        |
 |-----------|-------------------------------------------------------------------------------------------------|
 | `CMD`     | arguments executed inside `sh -c`. I.e. quote commands with redirects, logical operations, etc. |
-| `CONF`    | **breaking compat**: name change + no `set` argument.                                           |
+| `CONF`    | **breaking compat**: name change (from `CONFIG`) + no `set` argument.                           |
 | `CP`      | copies recursively                                                                              |
 | `INCLUDE` |                                                                                                 |
 | `MOUNT`   |                                                                                                 |
 | `PKG`     |                                                                                                 |
-| `EXPOSE`  | **breaking compat**: name change                                                                |
+| `EXPOSE`  | **breaking compat**: name change (from `RDR`)                                                   |
 | `RESTART` | convenient in conjunction with `CONF`                                                           |
 | `SERVICE` |                                                                                                 |
 | `SYSRC`   |                                                                                                 |
@@ -124,17 +124,49 @@ maxmemory_policy=${maxmemory_policy:-}
 
 ## Networking
 
-Sjail only supports these networking setups: shared interface or cloned
-loopback interface.
+Sjail supports multiple networking setups: cloned loopback, shared interface,
+VNET. You can mix them. For example cloned loopback for host-private jails,
+together with shared interface for LAN-public jails.
 
-The network setup is determined by the `interface` parameter in `sjail.conf`.
+Sjail does NOT automatically determine if NAT or RDR are needed—that's left
+to the user via `nat=1` and `rdr=1` creation arguments.
+
+The `iface` argument overrides the default `interface` configuration option and
+determines which interface to attach jails to—it does NOT determine NAT or RDR
+behavior.
+
+NAT/RDR may be required in complex setups (see [custom networking](#Custom)),
+but the basic guideline is:
+
+- NAT is needed when the jail's IP is NOT routable to the outside network. In
+  general this is the host network.
+
+- RDR is only needed when 1. Jail IP is not directly routable AND 2. we want
+  inbound connections to the jail.
+
+Sjail accepts multiple addresses (e.g.
+`ip4="lo1|127.0.1.2,em0|192.168.1.82/24"`
+`ip4="192.168.1.81/24,192.168.1.82/24"` or dual-stack `ip4=192.168.1.81/24
+ip6=fd10::81`), but **pf rules apply to ALL addresses**. For this reason,
+**sjail works best with one IP per jail**. Complex multi-IP setups are not
+supported.
+
+Note the FreeBSD 10.2 Handbook section on ezjail used to mentionned:
+
+> To keep jail loopback traffic off the host's loopback network interface lo0,
+> a second loopback interface is created by adding an entry to /etc/rc.conf […]
+
+It was indeed a common ezjail pattern to assign both a loopback IP (127.0.1.x
+on lo1) and a LAN IP (192.168.1.x on em0) to each jail. VNET has largely
+superseded this approach.
+
+Bastille is also a [good source of
+information](https://github.com/BastilleBSD/bastille/blob/642c78ffee70510cf3c2d9899d20e671b5bc60d2/docs/chapters/networking.rst)
+for jail networking.
 
 ### Shared interface
 
-When the `interface` parameter doesn't start with `lo`, it's interpreted as
-external interface.
-
-Jails get IPs attached to the host's external interface and are in the same
+Jails' IPs are attached to the host's external interface and are in the same
 subnet:
 
 ```
@@ -147,11 +179,9 @@ required.
 
 ### Cloned loopback
 
-When the `interface` parameter starts with `lo`, it's interpreted as a cloned
-loopback interface.
-
-Jails' IPs are attached to a clone loopback interface. Traffic between host and
-jails is enabled with `pf`: outgoing via NAT, incoming via RDR.
+Jails' IPs are attached to a clone loopback interface (like `lo1`). Traffic
+between host and jails is enabled with `pf`: outgoing via NAT, incoming via
+RDR.
 
 ```
 ext_if=vtnet0
@@ -180,10 +210,34 @@ pass in inet proto tcp from any to any port ssh flags S/SA keep state
 ```
 
 Port forwarding is persisted to `${jail_path}/rdr.conf` as lines of the format
-`<proto> <host_port> <client_port>` lines. They are applied *for ip4 and ip6*
-via `pf` rdr rules on jail start and cleared on jail stop.
+`<proto> <host_port> <client_port>`. They are applied *for ip4 and ip6* via
+`pf` rdr rules on jail start and cleared on jail stop.
 
 `rdr.conf` can be created manually of via the recipe `EXPOSE` command.
+
+### VNET
+
+Jails' IPs are attached to user-provided bridge. **Sjail does not automatically
+create bridges**. When the bridge links to an external interface, jails are
+exposed to the same network as the host.
+
+Note, if you're using both jails and VMs on the same host and want to make them
+accessible on the LAN, since *a physical interface can only belong to one
+bridge at a time*, it's best to create a bridge that will be shared between
+jails and VMs. For example, create `bridge0` and configure vm-bhyve to use it:
+`vm switch create -t manual -b bridge0 public`.
+
+The bridge can also link to a private jail network:
+
+```
+# sysrc cloned_interfaces+="bridge0"
+# sysrc ifconfig_bridge0="inet 10.0.0.1/24 description jailnet up"
+# sysrc gateway_enable="YES"
+# sysrc pf_enable="YES"  # adapt accordingly
+```
+
+VNET jails are useful when applications insist on binding to 127.0.0.1 (like
+Gradle), as each jail gets its own isolated loopback interface.
 
 ### Custom
 
@@ -202,30 +256,10 @@ VPN server, and jails that:
 
 - are exposed to local network
 - can reach out to the internet (ex: pkg install)
-- but don't expose ports to the VPN network (`pf_ext_if=vpn_cli_if`)
+- but don't expose ports to the VPN network (`ext_if=tun0`)
 
 A solution to these requirements is a *shared interface* setup and only
 enabling NAT for jails.
-
-### VNET
-
-Sjail does not automatically create bridges. Since a physical interface can
-only belong to one bridge at a time, you may need to manually create a shared
-bridge when both jails and VMs need LAN access. For example, create `bridge0`
-and configure vm-bhyve to use it: `vm switch create -t manual -b bridge0
-public`.
-
-One can also create a private jail network:
-
-```
-# sysrc cloned_interfaces+="bridge0"
-# sysrc ifconfig_bridge0="inet 10.0.0.1/24 description jailnet up"
-# sysrc gateway_enable="YES"
-# sysrc pf_enable="YES"  # adapt accordingly
-```
-
-VNET jails are useful when applications insist on binding to 127.0.0.1 (like
-Gradle), as each jail gets its own isolated loopback interface.
 
 ## Upgrade
 

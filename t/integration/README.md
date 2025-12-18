@@ -16,11 +16,13 @@ If you already have a running FreeBSD vm, you can just clone it:
 ```
 zfs list -r -t snapshot tank/vm
 vm clone sjail-test@2025-01-16-22:10:46 sjail-test1
+vm clone sjail-test@2025-01-16-22:10:46 sjail-test2
 ```
 
 ## Usage
 
-Review global variables in [pre.sh](./pre.sh).
+Review global variables in [pre.sh](./pre.sh), configure VMs networking
+accordingly and start them.
 
 Then
 

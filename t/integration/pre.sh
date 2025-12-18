@@ -3,12 +3,13 @@
 #
 # Global test variables
 #
-release="14.2-RELEASE"
+release="14.3-RELEASE"
 
 # Fresh FreeBSD installs.
 vm1=192.168.1.202
 vm2=192.168.1.203
 jail1=192.168.1.205
+jail1_lo=127.0.1.5
 
 #
 # Utils

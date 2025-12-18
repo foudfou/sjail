@@ -16,7 +16,7 @@ t="networking shared interface"
 conf='zfs_dataset="zroot/sjail"
 zfs_mount="/sjail"
 interface="vtnet0"
-pf_ext_if=""'
+ext_if=""'
 
 pf='ext_if=vtnet0
 icmp_types  = "{ echoreq, unreach }"

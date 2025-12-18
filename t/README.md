@@ -50,7 +50,7 @@ cat <<EOF >/usr/local/etc/sjail.conf
 zfs_dataset="zroot/sjail"
 zfs_mount="/sjail"
 interface="lo1"
-pf_ext_if="ext_if"
+ext_if="vtnet0"
 EOF
 
 cat <<EOF >/etc/pf.conf
@@ -93,9 +93,6 @@ vm snapshot sjail-test
 ```
 
 ### Run tests
-
-Note we're intentionally focusing on the cloned loopback network setup as it's
-more involved than the shared interface.
 
 Review `t/pre.sh` then
 

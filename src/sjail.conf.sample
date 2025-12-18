@@ -1,4 +1,4 @@
 zfs_dataset="zroot/sjail"
 zfs_mount="/sjail"
 interface="lo1"
-pf_ext_if="ext_if"
+ext_if="em0"
