@@ -388,7 +388,14 @@ EOF
 
 sjail_hook_vnet_stop() {
     local jail_name="$1"; shift
+    local jail_path="${zfs_mount}/jails/${jail_name}"
 
+    . "${jail_path}/meta.conf"
+
+    local bridge=${jail_meta_iface}
+
+    # Jib doesn't do it, but instructed by the handbook.
+    ifconfig ${bridge} deletem "e0a_${jail_name}"
     ifconfig "e0a_${jail_name}" destroy
 }
 
