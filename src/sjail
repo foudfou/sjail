@@ -389,7 +389,7 @@ EOF
 sjail_hook_vnet_stop() {
     local jail_name="$1"; shift
 
-    ifconfig "e0b_${jail_name}" destroy
+    ifconfig "e0a_${jail_name}" destroy
 }
 
 
