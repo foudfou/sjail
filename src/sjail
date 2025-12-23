@@ -9,15 +9,15 @@ freebsd_url=https://download.freebsd.org/releases/amd64/amd64
 # https://cgit.freebsd.org/src/tree/usr.sbin/bsdinstall/scripts/zfsboot?h=releng/14.1#n54
 zfs_options="-o compress=lz4 -o atime=off"
 
+
+if [ ! -e /usr/local/etc/sjail.conf ]; then
+    log_fatal "missing /usr/local/etc/sjail.conf"
+fi
 . /usr/local/etc/sjail.conf
 . /usr/local/share/sjail/common.sh
 
 sjail_init() {
     log "Setting up sjail"
-
-    if [ ! -e /usr/local/etc/sjail.conf ]; then
-        log_fatal "missing /usr/local/etc/sjail.conf"
-    fi
 
     zfs create ${zfs_options} -o mountpoint=${zfs_mount} "${zfs_dataset}"
 
@@ -36,7 +36,6 @@ EOF
 
 sjail_release_create() {
     local version="$1"
-    local nofetch=$(arg_get nofetch "$@")
 
     log "Creating release ${version}"
 
@@ -47,35 +46,49 @@ sjail_release_create() {
 
     zfs create -p "${zfs_dataset}/releases/${version}"
 
-    if [ -z "${nofetch}" ]; then
-        fetch "${freebsd_url}/${version}/MANIFEST" -o /tmp/MANIFEST
+    read VERSION_MAJOR VERSION_MINOR BRANCH <<EOF
+$(get_version_components ${version})
+EOF
+    if [ "${BRANCH}" != "RELEASE" ]; then
+        log_fatal "only RELEASE branch supported"
     fi
 
-    local release_archives="base" a
-    for a in ${release_archives}; do
-        local archive="${a}.txz"
+    local host_fingerprintsdir="/usr/share/keys/pkgbase-${VERSION_MAJOR}"
+    local release_fingerprintsdir="${release_path}/usr/share/keys"
+    local fingerprints="${release_fingerprintsdir}/pkgbase-${VERSION_MAJOR}"
 
-        if [ -z "${nofetch}" ]; then
-            rm -f /tmp/${archive} || true
-            fetch "${freebsd_url}/${version}/${archive}" -o /tmp/${archive}
-        fi
+    mkdir -p "${release_fingerprintsdir}"
+    cp -a "${host_fingerprintsdir}" "${release_fingerprintsdir}"
 
-        local checksum_want=$(grep -w ${archive} /tmp/MANIFEST | cut -f2)
-        local checksum_got=$(sha256 -q /tmp/${archive})
-        if [ "${checksum_got}" != "${checksum_want}" ]; then
-            log_fatal "wrong checksum for ${archive}: ${checksum_got}"
-        fi
+    # See /etc/pkg/ or /usr/share/bsdinstall/
+    local repos_dir=${release_path}/.pkgrepos
+    mkdir ${repos_dir}
+    cat > ${repos_dir}/FreeBSD.conf <<EOF
+FreeBSD-base: {
+  url: "pkg+https://pkg.FreeBSD.org/\${ABI}/base_release_\${VERSION_MINOR}",
+  mirror_type: "srv",
+  signature_type: "fingerprints",
+  fingerprints: "/usr/share/keys/pkgbase-\${VERSION_MAJOR}",
+  enabled: yes
+}
+EOF
 
-        tar -xf /tmp/${archive} -C "${release_path}"
-    done
+    local pkg_cmd=$(make_pkg_cmd ${release_path} ${version})
+    ${pkg_cmd} update -r FreeBSD-base
+    ${pkg_cmd} install -r FreeBSD-base FreeBSD-set-base
+
+    touch "${release_path}/root/.hushlogin"
+    touch "${release_path}/usr/share/skel/dot.hushlogin"
 }
 
 sjail_release_update() {
     local version="$1"
+
     log "Updating release ${version}"
-    freebsd-update --currently-running ${version} -b ${zfs_mount}/releases/${version} fetch install
-    # TODO uncomment when code stabilizes
-    #freebsd-update --currently-running ${version} -b ${zfs_mount}/releases/${version} IDS
+
+    local release_path="${zfs_mount}/releases/${version}"
+    local pkg_cmd=$(make_pkg_cmd ${release_path} ${version})
+    ${pkg_cmd} update -r FreeBSD-base
 }
 
 # Only to avoid destroying a release on which some jails depend.
@@ -189,7 +202,7 @@ EOF
       ln -Fsf /.ro/${l} ${l}
     done
 
-    local rw=".cshrc .profile COPYRIGHT dev etc media mnt net proc root tmp var usr/obj usr/tests" files
+    local rw="COPYRIGHT dev etc media mnt net proc root tmp var usr/tests" files
     for files in ${rw}; do
       cp -a "${zfs_mount}/releases/${version}/${files}" "${jail_path}/root/${files}"
     done
@@ -417,7 +430,7 @@ Commands:
     list         List status of all jails.
     pkg-upgrade  Unattended upgrade of packages in all running jails.
     rel-create   Fetch and create base image. Args: version
-                 (e.g. 14.2-RELEASE). Opts: nofetch=1 skips download.
+                 (e.g. 14.2-RELEASE).
     rel-destroy  Destroy base image. Args: version
     rel-update   Apply freebsd-update on base image with version.
                  Can be done anytime. Args: version
