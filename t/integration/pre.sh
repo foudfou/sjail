@@ -85,7 +85,7 @@ setup_pf() {
     local vm=$1
     local pf=$2
 
-    echo "$pf" | ssh root@"${vm}" -T "cat > /etc/pf.conf"
+    echo "${pf}" | ssh root@"${vm}" -T "cat > /etc/pf.conf"
     ssh root@"${vm}" "service pf reload" ||true
 }
 
@@ -104,7 +104,7 @@ delete_jail() {
 
     rm sjail-test.*
     ssh root@"${vm}" jail -r ${jail}
-    zfs unmount -f ${zfs_mount}/jails/${jail}
+    ssh root@"${vm}" zfs unmount -f ${zfs_mount}/jails/${jail}
     ssh root@"${vm}" sjail destroy ${jail} || \
         ssh root@"${vm}" zfs destroy -f ${zfs_sjail}/jails/${jail}
 }

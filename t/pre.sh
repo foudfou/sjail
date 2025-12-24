@@ -29,27 +29,3 @@ suicide() { # intended for non-test commands
 . /usr/local/etc/sjail.conf
 
 . t/tap.sh
-
-pf='ext_if=vtnet0
-icmp_types  = "{ echoreq, unreach }"
-icmp6_types = "{ echoreq, unreach, routeradv, neighbrsol, neighbradv }"
-
-# sjail-managed
-table <jails> persist
-
-set skip on lo
-
-# sjail-managed
-rdr-anchor "rdr/*"
-
-nat on $ext_if from <jails> to any -> ($ext_if:0)
-
-block in all
-pass out all keep state
-antispoof for $ext_if
-
-pass inet proto icmp icmp-type $icmp_types
-pass inet6 proto icmp6 icmp6-type $icmp6_types
-
-# Allow ssh
-pass in inet proto tcp from any to any port ssh flags S/SA keep state'

@@ -213,6 +213,7 @@ Port forwarding is persisted to `${jail_path}/rdr.conf` as lines of the format
 `<proto> <host_port> <client_port>`. They are applied *for ip4 and ip6* via
 `pf` rdr rules on jail start and cleared on jail stop.
 
+<!-- FIXME rename EXPOSE to RDR -->
 `rdr.conf` can be created manually of via the recipe `EXPOSE` command.
 
 ### VNET
@@ -227,6 +228,7 @@ bridge at a time*, it's best to create a bridge that will be shared between
 jails and VMs. For example, create `bridge0` and configure vm-bhyve to use it:
 `vm switch create -t manual -b bridge0 public`.
 
+<!-- TODO test support for private vnet jails -->
 The bridge can also link to a private jail network:
 
 ```

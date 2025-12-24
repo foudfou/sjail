@@ -68,12 +68,12 @@ conn_jail_vm_ok "app: j01 → vm2" ${vm2} ${vm1} j01 ${jail1}
 conn_jail_lo0_ok "app: j01 lo0" ${vm1} j01
 delete_jail ${vm1} j01
 
-## FIXME need get_ip vnet support
+## TODO requires whole specific networking setup. Probably deserve its own file
 # # VNET jail with private IP (isolated network)
 # #sjail create build 14.3-RELEASE vnet=1 ip4=10.0.0.10/24 iface=bridge0 nat=1
 # # Makes sense: Private VNET jail needs NAT for outbound access
 # new_jail ${vm1} j01 ip4=${jail1_ip4}/24 vnet=1 iface=bridge0 nat=1
-# conn_vm_jail_ok "build: vm2 → j01" ${vm1} j01 ${jail1} ${vm2}
+# conn_vm_jail_fail "build: vm2 → j01" ${vm1} j01 ${jail1} ${vm2} #requires rdr=1
 # conn_ext_nat_ok "build: j01 → ext" ${vm1} j01
 # conn_jail_vm_ok "build: j01 → vm2" ${vm2} ${vm1} j01 ${jail1}
 # conn_jail_lo0_ok "build: j01 lo0" ${vm1} j01

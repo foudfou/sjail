@@ -135,10 +135,13 @@ EOF
         ip6_mode="ip6 = new;"
     fi
 
-    local hooks="
+    local hooks=""
+    if [ -n "${nat}" -o -n "${rdr}" ]; then
+       hooks="
   exec.poststart += \"${sjail} _pf_start \$name\";
   exec.prestop   += \"${sjail} _pf_stop \$name\";
 "
+    fi
 
     local networking="
   interface = ${iface};
@@ -213,6 +216,7 @@ EOF
     touch etc/fstab
 
     if [ -n "${vnet}" ] && [ -n "${ip4}" ]; then
+        # TODO for priv vnet, take use arg instead
         local gw4=$(netstat -4rn | awk '/default/ {print $2}')
         cat >> etc/rc.conf <<EOF
 ifconfig_e0b_${jail_name}="inet ${ip4}"
@@ -312,9 +316,11 @@ sjail_hook_pf_start() {
 
     . "${jail_path}/meta.conf"
 
+    local jail_rc_conf="${jail_path}/root/etc/rc.conf"
+    local ip4s=$(jail_get_ips ip4 "${jail_name}" "${jail_rc_conf}")
+    local ip6s=$(jail_get_ips ip6 "${jail_name}" "${jail_rc_conf}")
+
     if [ "${jail_meta_nat}" = "1" ]; then
-        local ip4s=$(jail_conf_get_ips "${jail_name}" ip4)
-        local ip6s=$(jail_conf_get_ips "${jail_name}" ip6)
         local ip
         for ip in ${ip4s} ${ip6s}; do
             pfctl -q -t jails -T add "${ip}"
@@ -322,11 +328,14 @@ sjail_hook_pf_start() {
     fi
 
     if [ "${jail_meta_rdr}" = "1" -a -s "${jail_path}/rdr.conf" ]; then
+        local ip4=$(echo "${ip4s}" | cut -d" " -f1)
+        local ip6=$(echo "${ip6s}" | cut -d" " -f1)
+
         while read line; do
             line=$(echo "${line}") # trim
             [ ${#line} -eq 0 -o \
               "$(printf %.1s "${line}")" = "#" ] && continue
-            pf_rdr_add "$jail_name" ${line}
+            pf_rdr_add "$jail_name" ${line} "${ip4}" "${ip6}"
         done < "${jail_path}/rdr.conf"
     fi
 }
@@ -343,8 +352,8 @@ sjail_hook_pf_stop() {
     fi
 
     if [ "${jail_meta_nat}" = "1" ]; then
-        local ip4s=$(jail_conf_get_ips "${jail_name}" ip4)
-        local ip6s=$(jail_conf_get_ips "${jail_name}" ip6)
+        local ip4s=$(jail_get_ips ip4 "${jail_name}" "${jail_path}")
+        local ip6s=$(jail_get_ips ip6 "${jail_name}" "${jail_path}")
         local ip
         for ip in ${ip4s} ${ip6s}; do
             pfctl -q -t jails -T delete "${ip}"
@@ -354,9 +363,9 @@ sjail_hook_pf_stop() {
 
 pf_rdr_add() {
     local jail_name=$1 proto=$2 host_port=$3 jail_port=$4
+    local jail_ip4=$5 jail_ip6=$6
 
     # Taking the first ip for redirection by convention.
-    local jail_ip4=$(jail_conf_get_ips "${jail_name}" ip4 | cut -d" " -f1)
     if [ -n "$jail_ip4" ]; then
         ( pfctl -a "rdr/${jail_name}" -Psn 2> /dev/null; # previous
           echo "rdr pass on ${ext_if} inet proto ${proto}" \
@@ -364,7 +373,6 @@ pf_rdr_add() {
             | pfctl -a "rdr/${jail_name}" -f-
     fi
 
-    local jail_ip6=$(jail_conf_get_ips "${jail_name}" ip6 | cut -d" " -f1)
     if [ -n "$jail_ip6" ]; then
         ( pfctl -a "rdr/${jail_name}" -Psn 2> /dev/null; # previous
           echo "rdr pass on ${ext_if} inet6 proto ${proto}" \

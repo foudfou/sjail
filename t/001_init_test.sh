@@ -9,6 +9,16 @@ cleanup() {
 
 t="init"
 
+setup_sjail() {
+    cat <<EOF >/usr/local/etc/sjail.conf
+zfs_dataset="zroot/sjail"
+zfs_mount="/sjail"
+interface="lo1"
+ext_if="vtnet0"
+EOF
+}
+setup_sjail
+
 sjail init ||suicide
 
 zfs list -H ${zfs_dataset} >/dev/null

@@ -64,8 +64,8 @@ jail_conf_get_val() {
 }
 
 jail_conf_get_ips() {
-    local jail_name=$1
-    local class=$2
+    local class=$1; shift
+    local jail_name=$1; shift
 
     local ips=""
 
@@ -78,6 +78,44 @@ jail_conf_get_ips() {
     done
 
     echo "${ips# }"
+}
+
+jail_get_ips() {
+    local class=$1; shift
+    local jail_name=$1; shift
+    local rc_conf=$1; shift
+
+    local ips=$(jail_conf_get_ips "${class}" "${jail_name}")
+    if [ -z "${ips}" ]; then
+        ips=$(jail_vnet_get_ip "${class}" "${jail_name}" "${rc_conf}")
+    fi
+
+    echo "$ips"
+}
+
+# Until we encounter use cases for multi-IPs, only a single ip4 or ip6 is
+# supported. This is ineed inconsistent with jail_conf_get_ips. We should have
+# avoided multi-IPs for the same reason.
+jail_vnet_get_ip() {
+    local class=$1; shift
+    local jail_name=$1; shift
+    local rc_conf=$1; shift
+
+    local ip=""
+    if [ "${class}" = ip4 ]; then
+        ip=$(sysrc -f "${rc_conf}" -ni ifconfig_e0b_${jail_name})
+        ip=${ip##inet }
+        ip=${ip%% inet*} # single ip
+        ip=${ip%%/*}
+    elif [ "${class}" = ip6 ]; then
+        ip=$(sysrc -f "${rc_conf}" -ni ifconfig_e0b_${jail_name}_ipv6)
+        ip=${ip##inet6 }
+        ip=${ip%% inet6*} # single ip
+        ip=${ip%% prefixlen*}
+        ip=${ip%%/*}
+    fi
+
+    echo "${ip}"
 }
 
 # Deterministic MACs to avoid ARP cache instability.
