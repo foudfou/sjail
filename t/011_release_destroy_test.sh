@@ -9,7 +9,7 @@ cleanup() {
 
 t="release destroy"
 
-sjail create j01 "${release}" ip4=10.1.1.11 >/dev/null ||suicide
+sjail create j01 "${release}" ip4=10.1.1.11/24 >/dev/null ||suicide
 
 sjail rel-destroy "${release}" >/dev/null 2>&1; [ $? -ne 0 ]
 tap_ok $? "$t: prevent dependent release destroy"

@@ -10,7 +10,7 @@ cleanup() {
 
 t="rdr"
 
-sjail create alcatraz "${release}" ip4=10.1.1.11 ip6=fd10::11 rdr=1 >/dev/null ||suicide
+sjail create alcatraz "${release}" ip4=10.1.1.11/24 ip6=fd10::11 rdr=1 >/dev/null ||suicide
 
 # testing whitespace
 echo "   	" >> ${zfs_mount}/jails/alcatraz/rdr.conf

@@ -10,7 +10,7 @@ cleanup() {
 
 t="create meta"
 
-sjail create j01 "${release}" ip4=10.1.1.11 nat=1 rdr=0 >/dev/null ||suicide
+sjail create j01 "${release}" ip4=10.1.1.11/24 nat=1 rdr=0 >/dev/null ||suicide
 
 jail_path="${zfs_mount}/jails/j01"
 [ -e ${jail_path}/meta.conf ]

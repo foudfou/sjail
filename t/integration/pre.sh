@@ -104,6 +104,7 @@ delete_jail() {
 
     rm sjail-test.*
     ssh root@"${vm}" jail -r ${jail}
+    zfs unmount -f ${zfs_mount}/jails/${jail}
     ssh root@"${vm}" sjail destroy ${jail} || \
         ssh root@"${vm}" zfs destroy -f ${zfs_sjail}/jails/${jail}
 }

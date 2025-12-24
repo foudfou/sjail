@@ -11,7 +11,7 @@ cleanup() {
 
 t="apply conf"
 
-sjail create j01 "${release}" ip4=10.1.1.11 >/dev/null ||suicide
+sjail create j01 "${release}" ip4=10.1.1.11/24 >/dev/null ||suicide
 jail -c j01 >/dev/null ||suicide
 
 mkdir "${zfs_mount}/recipes/test1" ||suicide

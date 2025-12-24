@@ -16,7 +16,7 @@ t="list"
 jails="j01 j02 j03 j04"
 
 for j in ${jails}; do
-    sjail create "${j}" "${release}" "ip4=10.1.1.2${j#j}" >/dev/null ||suicide
+    sjail create "${j}" "${release}" "ip4=10.1.1.2${j#j}/24" >/dev/null ||suicide
 done
 
 include='.include "/etc/jail.*.conf";'

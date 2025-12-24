@@ -24,24 +24,24 @@ grep -q _pf ${jail_conf};
 tap_ok $? "$t: hooks"
 sjail destroy alcatraz >/dev/null ||suicide
 
-sjail create alcatraz "${release}" ip4=1.2.3.4 >/dev/null ||suicide
-grep -q "ip4.addr = 1.2.3.4;" ${jail_conf}
+sjail create alcatraz "${release}" ip4=1.2.3.4/24 >/dev/null ||suicide
+grep -q "ip4.addr = 1.2.3.4/24;" ${jail_conf}
 tap_ok $? "$t: ip4.addr"
 sjail destroy alcatraz >/dev/null ||suicide
 
-sjail create alcatraz "${release}" ip6=fd10::1 >/dev/null ||suicide
-grep -q "ip6.addr = fd10::1;" ${jail_conf}
+sjail create alcatraz "${release}" ip6=fd10::1/64 >/dev/null ||suicide
+grep -q "ip6.addr = fd10::1/64;" ${jail_conf}
 tap_ok $? "$t: ip6.addr"
 sjail destroy alcatraz >/dev/null ||suicide
 
-sjail create alcatraz "${release}" ip4=1.2.3.4 ip6=fd10::1 >/dev/null ||suicide
-grep -q "ip6.addr = fd10::1;" ${jail_conf} && \
-    grep -q "ip4.addr = 1.2.3.4;" ${jail_conf}
+sjail create alcatraz "${release}" ip4=1.2.3.4/24 ip6=fd10::1/64 >/dev/null ||suicide
+grep -q "ip6.addr = fd10::1/64;" ${jail_conf} && \
+    grep -q "ip4.addr = 1.2.3.4/24;" ${jail_conf}
 tap_ok $? "$t: ipx.addr"
 sjail destroy alcatraz >/dev/null ||suicide
 
 sed -ie 's/interface=.*/interface="vtnet0"/' /usr/local/etc/sjail.conf
-sjail create alcatraz "${release}" ip4=1.2.3.4 >/dev/null ||suicide
+sjail create alcatraz "${release}" ip4=1.2.3.4/24 >/dev/null ||suicide
 grep -q -E 'interface = vtnet0;' ${jail_conf};
 tap_ok $? "$t: shared interface"
 grep -q _pf ${jail_conf}
@@ -49,7 +49,7 @@ tap_ok $? "$t: hooks for shared interface"
 sjail destroy alcatraz >/dev/null ||suicide
 
 sed -ie 's/interface=.*/interface="lo1"/' /usr/local/etc/sjail.conf
-sjail create alcatraz "${release}" ip4=1.2.3.4 >/dev/null ||suicide
+sjail create alcatraz "${release}" ip4=1.2.3.4/24 >/dev/null ||suicide
 grep -q -E 'interface = lo1;' ${jail_conf};
 tap_ok $? "$t: loopback interface - explicit"
 grep -q _pf ${jail_conf}

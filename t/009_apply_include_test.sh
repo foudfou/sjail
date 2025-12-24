@@ -11,7 +11,7 @@ cleanup() {
 
 t="apply include"
 
-sjail create alcatraz "${release}" ip4=10.1.1.11 >/dev/null ||suicide
+sjail create alcatraz "${release}" ip4=10.1.1.11/24 >/dev/null ||suicide
 jail -c alcatraz >/dev/null ||suicide
 
 # --- Happy path ---

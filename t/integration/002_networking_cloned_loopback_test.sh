@@ -25,8 +25,7 @@ setup() {
 setup
 
 
-ssh root@"${vm1}" sjail create j01 "${release}" \
-    ip4="${jail1_lo}"/24 nat=1 rdr=1
+ssh root@"${vm1}" sjail create j01 "${release}" ip4="${jail1_lo}"/24 nat=1 rdr=1
 echo "tcp 1234 5555" | ssh root@"${vm1}" -T "cat > /sjail/jails/j01/rdr.conf"
 ssh root@"${vm1}" jail -c j01
 
