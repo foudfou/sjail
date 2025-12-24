@@ -31,8 +31,10 @@ suicide() { # intended for non-test commands
 # Common
 #
 zfs_sjail="zroot/sjail"
-CONF_DEFAULT='zfs_dataset="'${zfs_sjail}'"
 zfs_mount="/sjail"
+
+CONF_DEFAULT='zfs_dataset="'${zfs_sjail}'"
+zfs_mount="'${zfs_mount}'"
 interface="vtnet0"
 ext_if=""'
 
@@ -78,7 +80,7 @@ install_sjail() {
 
     setup_pf "${vm}" "${pf}"
 
-    ssh root@"${vm}" "sjail init" ||true
+    ssh root@"${vm}" "sjail init" >/dev/null 2>&1 ||true
 }
 
 setup_pf() {
@@ -102,7 +104,7 @@ delete_jail() {
     local vm=$1; shift
     local jail=$1; shift
 
-    rm sjail-test.*
+    rm sjail-test.* >/dev/null 2>&1
     ssh root@"${vm}" jail -r ${jail}
     ssh root@"${vm}" zfs unmount -f ${zfs_mount}/jails/${jail}
     ssh root@"${vm}" sjail destroy ${jail} || \

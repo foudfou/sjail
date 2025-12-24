@@ -20,6 +20,9 @@ cleanup() {
 t="custom networking"
 
 setup() {
+    out1=$(mktemp sjail-test.XXXXXX)
+    out2=$(mktemp sjail-test.XXXXXX)
+
     install_sjail "${vm1}" "${CONF_DEFAULT}" "${PF_DEFAULT}"
     ssh root@${vm1} 'sysrc cloned_interfaces+="lo1 bridge0"
 sysrc ifconfig_bridge0="addm vtnet0 up"
@@ -31,9 +34,6 @@ setup
 # ============================================================================
 # HAPPY PATH - common cases, make sense and work well
 # ============================================================================
-
-out1=$(mktemp sjail-test.XXXXXX)
-out2=$(mktemp sjail-test.XXXXXX)
 
 jail1_ip4="10.0.0.5"
 jail2_ip4="10.0.0.6"

@@ -19,6 +19,9 @@ interface="lo1"
 ext_if="vtnet0"'
 
 setup() {
+    out1=$(mktemp sjail-test.XXXXXX)
+    out2=$(mktemp sjail-test.XXXXXX)
+
     install_sjail "${vm1}" "${conf}" "${PF_DEFAULT}"
     ssh root@${vm1} 'sysrc cloned_interfaces+="lo1" && service netif cloneup'
 }
@@ -45,7 +48,7 @@ tap_ok $? "$t: connection succeded"
 
 
 rm sjail-test.*
-ssh root@"${vm1}" jail -r j01
+ssh root@"${vm1}" jail -r j01 >/dev/null 2>&1
 ssh root@"${vm1}" sjail destroy j01
 
 tap_end

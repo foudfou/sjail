@@ -14,31 +14,16 @@ cleanup() {
 t="networking shared interface"
 
 setup() {
+    out1=$(mktemp sjail-test.XXXXXX)
+    out2=$(mktemp sjail-test.XXXXXX)
+
     install_sjail "${vm1}" "${CONF_DEFAULT}" "${PF_DEFAULT}"
+    ssh root@"${vm2}" "service pf stop" ||true
 }
 setup
 
-
-ssh root@"${vm1}" sjail create j01 "${release}" ip4="${jail1}"/24
-ssh root@"${vm1}" jail -c j01
-
-out1=$(mktemp sjail-test.XXXXXX)
-ssh root@"${vm1}" "timeout 3 jexec -l j01 nc -v -l 5555" >$out1 2>&1 &
-pid=$!
-sleep .5
-out2=$(mktemp sjail-test.XXXXXX)
-ssh root@"${vm2}" nc -v -w 2 -z "${jail1}" 5555 >$out2 2>&1
-wait $pid
-
-grep -qE "Connection from ${vm2} .* received!" $out1
-tap_ok $? "$t: connection received"
-grep -qE "Connection to ${jail1} 5555 port \[tcp/personal-agent\] succeeded!" $out2
-tap_ok $? "$t: connection succeded"
-
-
-
-rm sjail-test.*
-ssh root@"${vm1}" jail -r j01
-ssh root@"${vm1}" sjail destroy j01
+new_jail ${vm1} j01 ip4=${jail1}/24
+conn_vm_jail_ok "vm2 → j01" ${vm1} j01 ${jail1} ${vm2}
+delete_jail ${vm1} j01
 
 tap_end
