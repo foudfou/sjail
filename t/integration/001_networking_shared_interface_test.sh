@@ -13,40 +13,11 @@ cleanup() {
 
 t="networking shared interface"
 
-conf='zfs_dataset="zroot/sjail"
-zfs_mount="/sjail"
-interface="vtnet0"
-ext_if=""'
+setup() {
+    install_sjail "${vm1}" "${CONF_DEFAULT}" "${PF_DEFAULT}"
+}
+setup
 
-pf='ext_if=vtnet0
-icmp_types  = "{ echoreq, unreach }"
-icmp6_types = "{ echoreq, unreach, routeradv, neighbrsol, neighbradv }"
-
-# sjail-managed
-table <jails> persist
-
-set skip on lo
-
-# sjail-managed
-rdr-anchor "rdr/*"
-
-nat on $ext_if from <jails> to any -> ($ext_if:0)
-
-block in all
-pass out all keep state
-antispoof for $ext_if
-
-pass inet proto icmp icmp-type $icmp_types
-pass inet6 proto icmp6 icmp6-type $icmp6_types
-
-# Allow local network
-pass from $ext_if:network to any keep state
-
-# Allow ssh
-pass in inet proto tcp from any to any port ssh flags S/SA keep state'
-
-install_sjail "${vm1}" "${conf}" "${pf}"
-install_sjail "${vm2}" "${conf}" "${pf}"
 
 ssh root@"${vm1}" sjail create j01 "${release}" ip4="${jail1}"/24
 ssh root@"${vm1}" jail -c j01

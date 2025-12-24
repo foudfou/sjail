@@ -9,6 +9,8 @@ VMs requirements:
 - root ssh enabled
 - sjail initialized once and release created (consistent with [t/integration/pre.sh](./t/integration/pre.sh))
 
+The general scenario is spawning jails in vm1 and checking connectivity from vm2.
+
 ## VM setup
 
 If you already have a running FreeBSD vm, you can just clone it:

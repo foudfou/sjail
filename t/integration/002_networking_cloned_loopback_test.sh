@@ -18,41 +18,16 @@ zfs_mount="/sjail"
 interface="lo1"
 ext_if="vtnet0"'
 
-pf='ext_if=vtnet0
-icmp_types  = "{ echoreq, unreach }"
-icmp6_types = "{ echoreq, unreach, routeradv, neighbrsol, neighbradv }"
-
-# sjail-managed
-table <jails> persist
-
-set skip on lo
-
-# sjail-managed
-rdr-anchor "rdr/*"
-
-nat on $ext_if from <jails> to any -> ($ext_if:0)
-
-block in all
-pass out all keep state
-antispoof for $ext_if
-
-pass inet proto icmp icmp-type $icmp_types
-pass inet6 proto icmp6 icmp6-type $icmp6_types
-
-# Allow ssh
-pass in inet proto tcp from any to any port ssh flags S/SA keep state'
-
-for vm in $vm1 $vm2; do
-    install_sjail "${vm}" "${conf}" "${pf}"
-
-    ssh root@"${vm}" 'sysrc cloned_interfaces+="lo1" && service netif cloneup'
-done
+setup() {
+    install_sjail "${vm1}" "${conf}" "${PF_DEFAULT}"
+    ssh root@${vm1} 'sysrc cloned_interfaces+="lo1" && service netif cloneup'
+}
+setup
 
 
-ssh root@"${vm1}" sjail create j01 "${release}" ip4="${jail1_lo}"/24 nat=1 rdr=1
-
+ssh root@"${vm1}" sjail create j01 "${release}" \
+    ip4="${jail1_lo}"/24 nat=1 rdr=1
 echo "tcp 1234 5555" | ssh root@"${vm1}" -T "cat > /sjail/jails/j01/rdr.conf"
-
 ssh root@"${vm1}" jail -c j01
 
 
