@@ -50,12 +50,12 @@ Following commands are provided:
 |                 |                                                                                                     |
 |-----------------|-----------------------------------------------------------------------------------------------------|
 | Init            | `sjail init`                                                                                        |
-| Create release  | `sjail rel-create 14.2-RELEASE`                                                                     |
-| Update release  | `sjail rel-update 14.2-RELEASE`                                                                     |
-| Destroy release | `sjail rel-destroy 14.2-RELEASE`                                                                    |
-| Create jail     | `sjail create alcatraz 14.2-RELEASE ip4=192.168.1.11/24 ip6=fd10:0:0:100::11 nat=1 rdr=0`           |
-|                 | `sjail create alcatraz 14.2-RELEASE ip4=10.1.1.13/24 iface=lo1 nat=1 rdr=1`                         |
-|                 | `sjail create alcatraz 14.2-RELEASE ip4=192.168.1.12/24 vnet=1 iface=bridge0 gw4=192.168.1.1 nat=1` |
+| Create release  | `sjail rel-create 15.0-RELEASE` since sjail-0.4.0 only releases 15.0+ are supported.                |
+| Update release  | `sjail rel-update 15.0-RELEASE`                                                                     |
+| Destroy release | `sjail rel-destroy 15.0-RELEASE`                                                                    |
+| Create jail     | `sjail create alcatraz 15.0-RELEASE ip4=192.168.1.11/24 ip6=fd10:0:0:100::11 nat=1 rdr=0`           |
+|                 | `sjail create alcatraz 15.0-RELEASE ip4=10.1.1.13/24 iface=lo1 nat=1 rdr=1`                         |
+|                 | `sjail create alcatraz 15.0-RELEASE ip4=192.168.1.12/24 vnet=1 iface=bridge0 gw4=192.168.1.1 nat=1` |
 | Destroy jail    | `sjail destroy alcatraz`                                                                            |
 | List            | `jls` or `sjail list` for all                                                                       |
 | Start           | `jail -c alcatraz`                                                                                  |
@@ -171,7 +171,7 @@ subnet:
 
 ```
 # Provided host ip = 192.168.1.23/24 and interface="em0" in sjail.conf
-sjail create j01 14.2-RELEASE ip4=192.168.1.201/24
+sjail create j01 15.0-RELEASE ip4=192.168.1.201/24
 ```
 
 Jails are thus accessible to the local network. No specific `pf` adaptation is
@@ -244,7 +244,7 @@ These parameters are persisted to `${jail_path}/meta.conf`.
 For example, we can enable NAT for outgoing traffic but disable RDR for
 incoming traffic:
 
-`sjail create j01 14.2-RELEASE ip4=192.168.1.201/24 nat=1 rdr=0`
+`sjail create j01 15.0-RELEASE ip4=192.168.1.201/24 nat=1 rdr=0`
 
 One use case for this is a host with a VPN that forwards default traffic to the
 VPN server, and jails that:

@@ -13,8 +13,8 @@ vm-bhyve, then:
 ```
 pkg install qemu-tools
 # vm img supports .raw .qcow2
-vm img https://download.freebsd.org/releases/VM-IMAGES/14.3-RELEASE/amd64/Latest/FreeBSD-14.3-RELEASE-amd64-zfs.qcow2.xz
-vm create -t freebsd-zvol -i FreeBSD-14.3-RELEASE-amd64-zfs.qcow2 sjail-test
+vm img https://download.freebsd.org/releases/VM-IMAGES/15.0-RELEASE/amd64/Latest/FreeBSD-15.0-RELEASE-amd64-zfs.qcow2.xz
+vm create -t freebsd-zvol -i FreeBSD-15.0-RELEASE-amd64-zfs.qcow2 sjail-test
 vm start sjail-test
 vm console sjail-test # login: root no password
 

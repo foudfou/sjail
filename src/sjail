@@ -6,7 +6,7 @@ freebsd_url=https://download.freebsd.org/releases/amd64/amd64
 # Not strictly necessary. zroot nowadays is created with compress=lz4 atime=off
 # and these are inherited by sub-datasets. This could still be useful when the
 # dataset in not on zroot. See
-# https://cgit.freebsd.org/src/tree/usr.sbin/bsdinstall/scripts/zfsboot?h=releng/14.1#n54
+# https://cgit.freebsd.org/src/tree/usr.sbin/bsdinstall/scripts/zfsboot?h=releng/15.0#n54
 zfs_options="-o compress=lz4 -o atime=off"
 
 
@@ -444,7 +444,7 @@ Commands:
     list         List status of all jails.
     pkg-upgrade  Unattended upgrade of packages in all running jails.
     rel-create   Fetch and create base image. Args: version
-                 (e.g. 14.2-RELEASE).
+                 (e.g. 15.0-RELEASE).
     rel-destroy  Destroy base image. Args: version
     rel-update   Apply freebsd-update on base image with version.
                  Can be done anytime. Args: version
