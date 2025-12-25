@@ -114,7 +114,16 @@ sjail_create() {
     local nat=$(arg_get nat "$@")
     local rdr=$(arg_get rdr "$@")
     local vnet=$(arg_get vnet "$@")
+    local gw4=$(arg_get gw4 "$@") # vnet
+    local gw6=$(arg_get gw6 "$@") # vnet
     log "Creating thin jail: $jail_name"
+
+    if [ -n "${ip4}" -a "${vnet}" = 1 -a -z "${gw4}" ]; then
+        log_fatal "missing gw4"
+    fi
+    if [ -n "${ip6}" -a "${vnet}" = 1 -a -z "${gw6}" ]; then
+        log_fatal "missing gw6"
+    fi
 
     zfs create -p "${zfs_dataset}/jails/${jail_name}"
 
@@ -216,8 +225,6 @@ EOF
     touch etc/fstab
 
     if [ -n "${vnet}" ] && [ -n "${ip4}" ]; then
-        # TODO for priv vnet, take use arg instead
-        local gw4=$(netstat -4rn | awk '/default/ {print $2}')
         cat >> etc/rc.conf <<EOF
 ifconfig_e0b_${jail_name}="inet ${ip4}"
 defaultrouter="${gw4}"
@@ -225,7 +232,6 @@ EOF
     fi
 
     if [ -n "${vnet}" ] && [ -n "${ip6}" ]; then
-        local gw6=$(netstat -6rn | awk '/default/ {print $2}')
         cat >> etc/rc.conf <<EOF
 ifconfig_e0b_${jail_name}_ipv6="inet6 ${ip6}"
 ipv6_defaultrouter="${gw6}"
@@ -432,7 +438,7 @@ Options:
 Commands:
     apply        Apply recipe on jail. Args: name recipe
     create       Create thin jail from base image. Args: name version.
-                 Opts: ip4, ip6, nat, rdr, vnet, iface
+                 Opts: ip4, ip6, nat, rdr, vnet, iface, gw4, gw6
     destroy      Destroy thin jail. Args: name
     init         Setup zpool, sysrc, networking.
     list         List status of all jails.

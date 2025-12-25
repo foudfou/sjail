@@ -9,6 +9,7 @@ release="15.0-RELEASE"
 
 # Test jail assigned IP. VNET expects an IP in the bridge network.
 test_jail_ip4=192.168.1.112
+test_jail_gw4=192.168.1.1
 ###############################################################################
 
 if [ "$(sysctl -n security.jail.jailed)" -eq 0 -a \

@@ -47,20 +47,20 @@ Create and review `/usr/local/etc/sjail.conf`:
 
 Following commands are provided:
 
-|                 |                                                                                           |
-|-----------------|-------------------------------------------------------------------------------------------|
-| Init            | `sjail init`                                                                              |
-| Create release  | `sjail rel-create 14.2-RELEASE`                                                           |
-| Update release  | `sjail rel-update 14.2-RELEASE`                                                           |
-| Destroy release | `sjail rel-destroy 14.2-RELEASE`                                                          |
-| Create jail     | `sjail create alcatraz 14.2-RELEASE ip4=192.168.1.11/24 ip6=fd10:0:0:100::11 nat=1 rdr=0` |
-|                 | `sjail create alcatraz 14.2-RELEASE ip4=10.1.1.13/24 iface=lo1 nat=1 rdr=1`               |
-|                 | `sjail create alcatraz 14.2-RELEASE ip4=192.168.1.12/24 vnet=1 iface=bridge0 nat=1`       |
-| Destroy jail    | `sjail destroy alcatraz`                                                                  |
-| List            | `jls` or `sjail list` for all                                                             |
-| Start           | `jail -c alcatraz`                                                                        |
-| Stop            | `jail -r alcatraz`                                                                        |
-| Recipe          | `sjail apply alcatraz some/recipe`                                                        |
+|                 |                                                                                                     |
+|-----------------|-----------------------------------------------------------------------------------------------------|
+| Init            | `sjail init`                                                                                        |
+| Create release  | `sjail rel-create 14.2-RELEASE`                                                                     |
+| Update release  | `sjail rel-update 14.2-RELEASE`                                                                     |
+| Destroy release | `sjail rel-destroy 14.2-RELEASE`                                                                    |
+| Create jail     | `sjail create alcatraz 14.2-RELEASE ip4=192.168.1.11/24 ip6=fd10:0:0:100::11 nat=1 rdr=0`           |
+|                 | `sjail create alcatraz 14.2-RELEASE ip4=10.1.1.13/24 iface=lo1 nat=1 rdr=1`                         |
+|                 | `sjail create alcatraz 14.2-RELEASE ip4=192.168.1.12/24 vnet=1 iface=bridge0 gw4=192.168.1.1 nat=1` |
+| Destroy jail    | `sjail destroy alcatraz`                                                                            |
+| List            | `jls` or `sjail list` for all                                                                       |
+| Start           | `jail -c alcatraz`                                                                                  |
+| Stop            | `jail -r alcatraz`                                                                                  |
+| Recipe          | `sjail apply alcatraz some/recipe`                                                                  |
 
 Compose your own:
 
@@ -225,18 +225,11 @@ exposed to the same network as the host.
 Note, if you're using both jails and VMs on the same host and want to make them
 accessible on the LAN, since *a physical interface can only belong to one
 bridge at a time*, it's best to create a bridge that will be shared between
-jails and VMs. For example, create `bridge0` and configure vm-bhyve to use it:
+jails and VMs. For example, create `bridge0` then configure vm-bhyve to use it:
 `vm switch create -t manual -b bridge0 public`.
 
-<!-- TODO test support for private vnet jails -->
-The bridge can also link to a private jail network:
-
-```
-# sysrc cloned_interfaces+="bridge0"
-# sysrc ifconfig_bridge0="inet 10.0.0.1/24 description jailnet up"
-# sysrc gateway_enable="YES"
-# sysrc pf_enable="YES"  # adapt accordingly
-```
+The bridge can also link to a distinct private jail network. See [integration
+tests](t/integration) for setup examples.
 
 VNET jails are useful when applications insist on binding to 127.0.0.1 (like
 Gradle), as each jail gets its own isolated loopback interface.

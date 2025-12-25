@@ -10,6 +10,7 @@ vm1=192.168.1.202
 vm2=192.168.1.203
 jail1=192.168.1.205
 jail1_lo=127.0.1.5
+jail1_gw4=192.168.1.1
 
 #
 # Utils
@@ -158,6 +159,7 @@ conn_jail_vm_ok() {
     sleep .5
     ssh root@"${vm_cli}" jexec -l ${jail_cli} nc -v -w 1 -z ${vm_srv} 5555 >$out2 2>&1
     wait $pid
+    # echo "==="; cat ${out1}; echo "==="; cat ${out2}; echo "==="
     grep -qE "Connection from ${jail_cli_ip4} .* received!" $out1
     tap_ok $? "$t: ${t_name} received"
     grep -qE "Connection to ${vm_srv} 5555 port \[tcp/personal-agent\] succeeded!" $out2

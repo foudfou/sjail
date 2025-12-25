@@ -24,12 +24,18 @@ setup() {
     out2=$(mktemp sjail-test.XXXXXX)
 
     install_sjail "${vm1}" "${CONF_DEFAULT}" "${PF_DEFAULT}"
-    ssh root@${vm1} 'sysrc cloned_interfaces+="lo1 bridge0"
-sysrc ifconfig_bridge0="addm vtnet0 up"
-service netif cloneup'
+    ssh root@${vm1} '
+    ifconfig bridge0 deletem vtnet0 2>/dev/null || true
+    ifconfig bridge0 destroy 2>/dev/null || true
+    sysrc cloned_interfaces+="lo1 bridge0"
+    sysrc ifconfig_bridge0="addm vtnet0 up"
+    sysrc gateway_enable="NO"
+    service netif cloneup
+    service routing restart
+'
     ssh root@"${vm2}" "service pf stop" ||true
 }
-setup
+setup >/dev/null 2>&1
 
 # ============================================================================
 # HAPPY PATH - common cases, make sense and work well
@@ -61,7 +67,7 @@ delete_jail ${vm1} j01
 # VNET jail with LAN IP (acts like physical machine on network)
 #sjail create app 14.3-RELEASE vnet=1 ip4=192.168.1.60/24 iface=bridge0
 # Makes sense: VNET with public IP, appears as another host on LAN
-new_jail ${vm1} j01 ip4=${jail1}/24 vnet=1 iface=bridge0
+new_jail ${vm1} j01 ip4=${jail1}/24 vnet=1 iface=bridge0 gw4=${jail1_gw4}
 conn_vm_jail_ok "app: vm2 → j01" ${vm1} j01 ${jail1} ${vm2}
 conn_ext_nat_ok "app: j01 → ext" ${vm1} j01
 conn_jail_vm_ok "app: j01 → vm2" ${vm2} ${vm1} j01 ${jail1}
