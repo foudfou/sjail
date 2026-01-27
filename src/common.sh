@@ -102,13 +102,14 @@ jail_vnet_get_ip() {
     local rc_conf=$1; shift
 
     local ip=""
+    local epair_name="e0b_$(sh_var ${jail_name})"
     if [ "${class}" = ip4 ]; then
-        ip=$(sysrc -f "${rc_conf}" -ni ifconfig_e0b_${jail_name})
+        ip=$(sysrc -f "${rc_conf}" -ni ifconfig_${epair_name})
         ip=${ip##inet }
         ip=${ip%% inet*} # single ip
         ip=${ip%%/*}
     elif [ "${class}" = ip6 ]; then
-        ip=$(sysrc -f "${rc_conf}" -ni ifconfig_e0b_${jail_name}_ipv6)
+        ip=$(sysrc -f "${rc_conf}" -ni ifconfig_${epair_name}_ipv6)
         ip=${ip##inet6 }
         ip=${ip%% inet6*} # single ip
         ip=${ip%% prefixlen*}
@@ -116,6 +117,11 @@ jail_vnet_get_ip() {
     fi
 
     echo "${ip}"
+}
+
+# rc.conf keys are shell variable but jail (host)names may contain other chars.
+sh_var() {
+    echo "$1" | tr '-' '_'
 }
 
 # Deterministic MACs to avoid ARP cache instability.

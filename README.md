@@ -110,10 +110,10 @@ When migrating from Bastille templates, here's a little checklist:
   -INCLUDE my/service-php --arg php_prefix=php82
   +INCLUDE my/service-php php_prefix=php82
   ```
-  - Make sure to escape spaces in strings:
-    ```
-    INCLUDE foudfou/service-nodejs npm_global="pm2\ pnpm" # otherwise interpreted as npm_global=pm2
-    ```
+- Make sure to escape spaces in strings:
+  ```
+  INCLUDE foudfou/service-nodejs npm_global="pm2\ pnpm" # otherwise interpreted as npm_global=pm2
+  ```
 
 Optional arguments must still be defined:
 

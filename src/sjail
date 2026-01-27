@@ -75,7 +75,7 @@ EOF
 
     local pkg_cmd=$(make_pkg_cmd ${release_path} ${version})
     ${pkg_cmd} update -r FreeBSD-base
-    ${pkg_cmd} install -r FreeBSD-base FreeBSD-set-base
+    ${pkg_cmd} install -r FreeBSD-base FreeBSD-set-base # FreeBSD-set-minimal-jail or base-jail?
 
     touch "${release_path}/root/.hushlogin"
     touch "${release_path}/usr/share/skel/dot.hushlogin"
@@ -160,9 +160,10 @@ EOF
 "
 
     if [ -n "${vnet}" ]; then
+        local epair_name="e0b_$(sh_var ${jail_name})"
         networking="
   vnet;
-  vnet.interface = \"e0b_\$name\";  # set by sjail hook
+  vnet.interface = \"${epair_name}\";  # set by sjail hook
 
   exec.prestart += \"${sjail} _vnet_start \$name\";
   exec.poststop += \"${sjail} _vnet_stop \$name\";
@@ -224,18 +225,22 @@ EOF
     ln -s usr/home home
     touch etc/fstab
 
-    if [ -n "${vnet}" ] && [ -n "${ip4}" ]; then
-        cat >> etc/rc.conf <<EOF
-ifconfig_e0b_${jail_name}="inet ${ip4}"
+    if [ -n "${vnet}" ]; then
+        local epair_name="e0b_$(sh_var ${jail_name})"
+
+        if [ -n "${ip4}" ]; then
+            cat >> etc/rc.conf <<EOF
+ifconfig_${epair_name}="inet ${ip4}"
 defaultrouter="${gw4}"
 EOF
-    fi
+        fi
 
-    if [ -n "${vnet}" ] && [ -n "${ip6}" ]; then
-        cat >> etc/rc.conf <<EOF
-ifconfig_e0b_${jail_name}_ipv6="inet6 ${ip6}"
+        if [ -n "${ip6}" ]; then
+            cat >> etc/rc.conf <<EOF
+ifconfig_${epair_name}_ipv6="inet6 ${ip6}"
 ipv6_defaultrouter="${gw6}"
 EOF
+        fi
     fi
 
     cd -
@@ -401,16 +406,17 @@ sjail_hook_vnet_start() {
 
     local bridge=${jail_meta_iface}
 
-    epair=$(ifconfig epair create)
+    local sh_name="$(sh_var ${jail_name})"
+    local epair=$(ifconfig epair create)
     ifconfig ${bridge} addm ${epair}
-    ifconfig ${epair} up name "e0a_${jail_name}"
-    ifconfig ${epair%a}b up name "e0b_${jail_name}"
+    ifconfig ${epair} up name "e0a_${sh_name}"
+    ifconfig ${epair%a}b up name "e0b_${sh_name}"
 
     read mac_a mac_b <<EOF
 $(jail_macs "${jail_name}")
 EOF
-    ifconfig "e0a_${jail_name}" ether ${mac_a}
-    ifconfig "e0b_${jail_name}" ether ${mac_b}
+    ifconfig "e0a_${sh_name}" ether ${mac_a}
+    ifconfig "e0b_${sh_name}" ether ${mac_b}
 }
 
 sjail_hook_vnet_stop() {
@@ -420,10 +426,11 @@ sjail_hook_vnet_stop() {
     . "${jail_path}/meta.conf"
 
     local bridge=${jail_meta_iface}
+    local epair_name="e0a_$(sh_var ${jail_name})"
 
     # Jib doesn't do it, but instructed by the handbook.
-    ifconfig ${bridge} deletem "e0a_${jail_name}"
-    ifconfig "e0a_${jail_name}" destroy
+    ifconfig ${bridge} deletem ${epair_name}
+    ifconfig ${epair_name} destroy
 }
 
 
