@@ -75,7 +75,8 @@ EOF
 
     local pkg_cmd=$(make_pkg_cmd ${release_path} ${version})
     ${pkg_cmd} update -r FreeBSD-base
-    ${pkg_cmd} install -r FreeBSD-base FreeBSD-set-base # FreeBSD-set-minimal-jail or base-jail?
+    # base-jail = optional-jail + minimal-jail + devel. bsdconfig for sysrc.
+    ${pkg_cmd} install -r FreeBSD-base FreeBSD-set-minimal-jail FreeBSD-bsdconfig
 
     touch "${release_path}/root/.hushlogin"
     touch "${release_path}/usr/share/skel/dot.hushlogin"
@@ -215,7 +216,7 @@ EOF
       ln -Fsf /.ro/${l} ${l}
     done
 
-    local rw="COPYRIGHT dev etc media mnt net proc root tmp var usr/tests" files
+    local rw="COPYRIGHT dev etc media mnt proc root tmp var usr/tests" files
     for files in ${rw}; do
       cp -a "${zfs_mount}/releases/${version}/${files}" "${jail_path}/root/${files}"
     done

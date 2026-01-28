@@ -155,6 +155,7 @@ EOF
     local repos_dir="${release_path}/.pkgrepos"
     local fingerprints="${release_path}/usr/share/keys/pkgbase-${VERSION_MAJOR}"
     local ABI="FreeBSD:${VERSION_MAJOR}:amd64"
+    # TODO "pkg: Setting ABI requires setting OSVERSION" despite IGNORE_OSVERSION?
     printf "pkg --rootdir ${release_path} --repo-conf-dir ${repos_dir} \
 -o IGNORE_OSVERSION=yes \
 -o VERSION_MAJOR=${VERSION_MAJOR} \

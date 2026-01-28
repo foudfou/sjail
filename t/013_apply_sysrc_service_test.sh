@@ -11,28 +11,31 @@ cleanup() {
 
 t="apply sysrc service"
 
-sjail create j01 "${release}" ip4=10.1.1.11/24 >/dev/null ||suicide
+sjail create j01 "${release}" ip4=10.1.1.11/24 nat=1 >/dev/null ||suicide
 jail -c j01 >/dev/null ||suicide
 
 mkdir "${zfs_mount}/recipes/test1" ||suicide
 cat <<EOF > "${zfs_mount}/recipes/test1/apply.sh"
-# Picking up inetd so as to avoid pkg install. Hope it's not deprecated.
-SYSRC inetd_enable="YES"
-SERVICE inetd start
+# Since we use FreeBSD-set-minimal-jail, we can't pick inetd (in -optional) and
+# avoid pkg (30s-1m more, possible networking issues). On the bright side we
+# actually test PKG.
+PKG nginx
+SYSRC nginx_enable="YES"
+SERVICE nginx start
 EOF
 
 out=$(sjail apply j01 test1 ||suicide)
 for pat in \
-  '^inetd_enable: NO -> YES$' \
-  '\bStarting inetd.$'; do
+  '^nginx_enable: NO -> YES$' \
+  '\bStarting nginx.$'; do
     echo -e "${out}" | grep -qE "${pat}"
     tap_ok $? "$t: apply success: ${pat}"
 done
 
-sysrc -j j01 -c inetd_enable="YES"
+sysrc -j j01 -c nginx_enable="YES"
 tap_ok $? "$t: sysrc success"
 
-jexec -l j01 service inetd status | grep -qE '^inetd is running as pid '
+jexec -l j01 service nginx status | grep -qE '^nginx is running as pid '
 tap_ok $? "$t: service running"
 
 
